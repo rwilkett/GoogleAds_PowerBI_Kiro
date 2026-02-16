@@ -3,6 +3,11 @@
 QUERY: qry_executive_dashboard_metrics
 DESCRIPTION: Executive summary metrics for high-level dashboard displays.
              Provides overall account health and key performance indicators.
+DEPENDENT VIEWS:
+  - dbo.vw_account_performance: Account-level daily metrics
+SCHEMA TABLES (via views):
+  - google_ads.account_stats: Daily account-level performance metrics
+  - google_ads.account_history: Account metadata
 ================================================================================
 */
 
@@ -93,6 +98,12 @@ GO
 QUERY: qry_daily_trend_analysis
 DESCRIPTION: Daily trend data for line charts and time series analysis.
              Supports date range filtering in PowerBI.
+DEPENDENT VIEWS:
+  - dbo.vw_date_dimension: Date dimension for time-based analysis
+  - dbo.vw_account_performance: Account-level daily metrics
+SCHEMA TABLES (via views):
+  - google_ads.account_stats: Daily account-level performance metrics
+  - google_ads.account_history: Account metadata
 ================================================================================
 */
 
@@ -144,6 +155,12 @@ GO
 QUERY: qry_campaign_performance_matrix
 DESCRIPTION: Campaign comparison matrix for identifying top/bottom performers.
              Useful for scatter plots and performance quadrant analysis.
+DEPENDENT VIEWS:
+  - dbo.vw_campaign_performance: Campaign-level daily metrics
+SCHEMA TABLES (via views):
+  - google_ads.campaign_stats: Daily campaign-level performance metrics
+  - google_ads.campaign_history: Campaign metadata
+  - google_ads.account_history: Account metadata
 ================================================================================
 */
 
@@ -231,6 +248,11 @@ GO
 QUERY: qry_budget_pacing
 DESCRIPTION: Budget utilization and pacing analysis for campaigns.
              Helps identify over/under-spending campaigns.
+DEPENDENT VIEWS:
+  - dbo.vw_campaign_performance: Campaign-level daily metrics with budget info
+SCHEMA TABLES (via views):
+  - google_ads.campaign_stats: Daily campaign-level performance metrics
+  - google_ads.campaign_history: Campaign metadata including budget_amount
 ================================================================================
 */
 
@@ -291,6 +313,12 @@ GO
 QUERY: qry_conversion_funnel
 DESCRIPTION: Conversion funnel analysis showing drop-off rates at each stage.
              Useful for identifying optimization opportunities.
+DEPENDENT VIEWS:
+  - dbo.vw_campaign_performance: Campaign-level daily metrics
+SCHEMA TABLES (via views):
+  - google_ads.campaign_stats: Daily campaign-level performance metrics
+  - google_ads.campaign_history: Campaign metadata
+  - google_ads.account_history: Account metadata
 ================================================================================
 */
 

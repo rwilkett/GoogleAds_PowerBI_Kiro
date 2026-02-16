@@ -3,7 +3,24 @@
 VIEW: vw_keyword_performance
 DESCRIPTION: Keyword-level performance metrics including quality score analysis.
              Provides insights into keyword performance and bid optimization.
-FIVETRAN TABLES: google_ads.keyword_stats, google_ads.ad_group_criterion_history
+SCHEMA TABLES:
+  - google_ads.keyword_stats: Daily keyword-level performance metrics
+    Columns: criterion_id, ad_group_id, campaign_id, account_id, date, spend,
+             impressions, clicks, conversions, conversions_value,
+             search_impression_share, search_top_impression_share,
+             search_absolute_top_impression_share, search_rank_lost_impression_share,
+             search_budget_lost_impression_share, _fivetran_synced
+  - google_ads.ad_group_criterion_history: Keyword and criteria metadata
+    Columns: criterion_id, ad_group_id, type, status, keyword_text, keyword_match_type,
+             system_serving_status, approval_status, quality_score, creative_quality_score,
+             post_click_quality_score, search_predicted_ctr, cpc_bid_micros,
+             effective_cpc_bid_micros, final_url_suffix, _fivetran_synced
+  - google_ads.ad_group_history: Ad group metadata
+    Columns: ad_group_id, name, _fivetran_synced
+  - google_ads.campaign_history: Campaign metadata
+    Columns: campaign_id, name, _fivetran_synced
+  - google_ads.account_history: Account metadata
+    Columns: account_id, descriptive_name, currency_code, _fivetran_synced
 ================================================================================
 */
 

@@ -3,6 +3,12 @@
 QUERY: qry_woy_wow_comparison
 DESCRIPTION: Week-over-Week and Year-over-Year comparison metrics.
              Enables time period comparison in PowerBI slicers.
+DEPENDENT VIEWS:
+  - dbo.vw_date_dimension: Date dimension for time-based analysis
+  - dbo.vw_account_performance: Account-level daily metrics
+SCHEMA TABLES (via views):
+  - google_ads.account_stats: Daily account-level performance metrics
+  - google_ads.account_history: Account metadata
 ================================================================================
 */
 
@@ -109,6 +115,12 @@ GO
 ================================================================================
 QUERY: qry_monthly_comparison
 DESCRIPTION: Month-over-Month and Year-over-Year monthly comparison.
+DEPENDENT VIEWS:
+  - dbo.vw_date_dimension: Date dimension for time-based analysis
+  - dbo.vw_account_performance: Account-level daily metrics
+SCHEMA TABLES (via views):
+  - google_ads.account_stats: Daily account-level performance metrics
+  - google_ads.account_history: Account metadata
 ================================================================================
 */
 
@@ -215,6 +227,13 @@ GO
 ================================================================================
 QUERY: qry_day_of_week_analysis
 DESCRIPTION: Performance analysis by day of week for bid scheduling optimization.
+DEPENDENT VIEWS:
+  - dbo.vw_date_dimension: Date dimension for time-based analysis
+  - dbo.vw_campaign_performance: Campaign-level daily metrics
+SCHEMA TABLES (via views):
+  - google_ads.campaign_stats: Daily campaign-level performance metrics
+  - google_ads.campaign_history: Campaign metadata
+  - google_ads.account_history: Account metadata
 ================================================================================
 */
 
@@ -281,7 +300,9 @@ GO
 ================================================================================
 QUERY: qry_hour_of_day_analysis (if hourly data available)
 DESCRIPTION: Performance analysis by hour for ad scheduling optimization.
-NOTE: Requires hourly stats tables if available in Fivetran schema.
+NOTE: Requires hourly stats tables if available in schema.
+SCHEMA TABLES: Not yet defined - would require google_ads.campaign_stats_hourly
+               or similar table for hourly granularity.
 ================================================================================
 */
 

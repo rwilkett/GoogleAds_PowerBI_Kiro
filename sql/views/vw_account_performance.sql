@@ -3,7 +3,12 @@
 VIEW: vw_account_performance
 DESCRIPTION: Account-level performance metrics aggregated from Google Ads data.
              Provides daily account stats with calculated KPIs for PowerBI.
-FIVETRAN TABLES: google_ads.account_stats, google_ads.account_history
+SCHEMA TABLES:
+  - google_ads.account_stats: Daily account-level performance metrics
+    Columns: account_id, date, spend, impressions, clicks, conversions,
+             conversions_value, view_through_conversions, _fivetran_synced
+  - google_ads.account_history: Account metadata with change history
+    Columns: account_id, descriptive_name, currency_code, time_zone, _fivetran_synced
 ================================================================================
 */
 

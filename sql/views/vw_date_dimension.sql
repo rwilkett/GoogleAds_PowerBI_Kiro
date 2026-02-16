@@ -3,8 +3,9 @@
 VIEW: vw_date_dimension
 DESCRIPTION: Date dimension table for time-based filtering and period comparisons
              in the Google Ads PowerBI dashboard.
-FIVETRAN SCHEMA: This view creates a date spine based on the date range found
-                 in Google Ads data.
+SCHEMA TABLES:
+  - google_ads.account_stats: Used to determine date range for the date spine
+    Columns: date (MIN/MAX for date spine bounds)
 ================================================================================
 */
 

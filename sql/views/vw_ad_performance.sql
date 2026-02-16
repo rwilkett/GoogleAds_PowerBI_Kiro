@@ -3,7 +3,25 @@
 VIEW: vw_ad_performance
 DESCRIPTION: Ad-level performance metrics for analyzing ad copy effectiveness.
              Includes ad details and creative performance insights.
-FIVETRAN TABLES: google_ads.ad_stats, google_ads.ad_history
+SCHEMA TABLES:
+  - google_ads.ad_stats: Daily ad-level performance metrics
+    Columns: ad_id, ad_group_id, campaign_id, account_id, date, spend, impressions,
+             clicks, conversions, conversions_value, interactions, video_views,
+             video_quartile_p100_rate, _fivetran_synced
+  - google_ads.ad_history: Ad metadata with change history
+    Columns: ad_id, ad_group_id, type, status, device_preference, ad_strength,
+             display_url, final_urls, final_mobile_urls, responsive_search_ad_headlines,
+             responsive_search_ad_descriptions, responsive_search_ad_path1,
+             responsive_search_ad_path2, expanded_text_ad_headline_part1,
+             expanded_text_ad_headline_part2, expanded_text_ad_headline_part3,
+             expanded_text_ad_description, expanded_text_ad_description2,
+             expanded_text_ad_path1, expanded_text_ad_path2, _fivetran_synced
+  - google_ads.ad_group_history: Ad group metadata
+    Columns: ad_group_id, name, _fivetran_synced
+  - google_ads.campaign_history: Campaign metadata
+    Columns: campaign_id, name, advertising_channel_type, _fivetran_synced
+  - google_ads.account_history: Account metadata
+    Columns: account_id, descriptive_name, currency_code, _fivetran_synced
 ================================================================================
 */
 
