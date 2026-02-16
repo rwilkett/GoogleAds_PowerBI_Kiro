@@ -3,8 +3,19 @@
 VIEW: vw_ad_group_performance
 DESCRIPTION: Ad Group-level performance metrics with drill-down capability.
              Provides hierarchical data from Account > Campaign > Ad Group.
-FIVETRAN TABLES: google_ads.ad_group_stats, google_ads.ad_group_history,
-                 google_ads.campaign_history, google_ads.account_history
+SCHEMA TABLES:
+  - google_ads.ad_group_stats: Daily ad group-level performance metrics
+    Columns: ad_group_id, campaign_id, account_id, date, spend, impressions, clicks,
+             conversions, conversions_value, view_through_conversions, interactions,
+             _fivetran_synced
+  - google_ads.ad_group_history: Ad group metadata with change history
+    Columns: ad_group_id, campaign_id, name, status, type, cpc_bid_micros,
+             cpm_bid_micros, target_cpa_micros, effective_target_cpa_micros,
+             effective_target_roas, _fivetran_synced
+  - google_ads.campaign_history: Campaign metadata with change history
+    Columns: campaign_id, name, status, advertising_channel_type, _fivetran_synced
+  - google_ads.account_history: Account metadata with change history
+    Columns: account_id, descriptive_name, currency_code, _fivetran_synced
 ================================================================================
 */
 

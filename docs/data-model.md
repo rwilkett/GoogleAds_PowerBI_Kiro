@@ -2,14 +2,14 @@
 
 ## Overview
 
-This document describes the data model for the Google Ads PowerBI dashboard, including entity relationships, metric definitions, and usage guidelines. The data is sourced from Fivetran's Google Ads connector and stored in SQL Server.
+This document describes the data model for the Google Ads PowerBI dashboard, including entity relationships, metric definitions, and usage guidelines. The data is sourced from Google Ads data (via Fivetran connector or similar ETL) and stored in SQL Server within the `google_ads` schema.
 
 ---
 
 ## Table of Contents
 
 1. [Entity Relationship Diagram](#entity-relationship-diagram)
-2. [Data Source Tables (Fivetran Schema)](#data-source-tables-fivetran-schema)
+2. [Data Source Tables (google_ads Schema)](#data-source-tables-google_ads-schema)
 3. [View Definitions](#view-definitions)
 4. [Metric Definitions](#metric-definitions)
 5. [Dimension Hierarchies](#dimension-hierarchies)
@@ -65,78 +65,98 @@ All fact tables connect to:
 
 ---
 
-## Data Source Tables (Fivetran Schema)
+## Data Source Tables (google_ads Schema)
+
+The following tables are defined in `AdCampaignDataSchema.sql` within the `google_ads` schema:
 
 ### Stats Tables (Daily Metrics)
 
-| Table Name | Description | Key Columns |
-|------------|-------------|-------------|
-| `google_ads.account_stats` | Daily account-level statistics | account_id, date, spend, impressions, clicks, conversions |
-| `google_ads.campaign_stats` | Daily campaign-level statistics | campaign_id, account_id, date, spend, impressions, clicks, conversions |
-| `google_ads.ad_group_stats` | Daily ad group-level statistics | ad_group_id, campaign_id, date, spend, impressions, clicks, conversions |
-| `google_ads.ad_stats` | Daily ad-level statistics | ad_id, ad_group_id, date, spend, impressions, clicks, conversions |
-| `google_ads.keyword_stats` | Daily keyword-level statistics | criterion_id, ad_group_id, date, spend, impressions, clicks, conversions |
+| Table Name | Description | Primary Key | Key Columns |
+|------------|-------------|-------------|-------------|
+| `google_ads.account_stats` | Daily account-level statistics | account_id, date | spend (DECIMAL), impressions (BIGINT), clicks (BIGINT), conversions (DECIMAL), conversions_value (DECIMAL), view_through_conversions (DECIMAL) |
+| `google_ads.campaign_stats` | Daily campaign-level statistics | campaign_id, date | campaign_id, account_id, spend, impressions, clicks, conversions, video_views, interaction_event_types |
+| `google_ads.ad_group_stats` | Daily ad group-level statistics | ad_group_id, date | ad_group_id, campaign_id, account_id, spend, impressions, clicks, conversions |
+| `google_ads.ad_stats` | Daily ad-level statistics | ad_id, date | ad_id, ad_group_id, campaign_id, account_id, spend, impressions, clicks, conversions, video_views |
+| `google_ads.keyword_stats` | Daily keyword-level statistics | criterion_id, date | criterion_id, ad_group_id, campaign_id, account_id, search_impression_share metrics |
 
 ### History Tables (Entity Attributes)
 
-| Table Name | Description | Key Columns |
-|------------|-------------|-------------|
-| `google_ads.account_history` | Account metadata changes | account_id, descriptive_name, currency_code, time_zone |
-| `google_ads.campaign_history` | Campaign metadata changes | campaign_id, name, status, advertising_channel_type, budget_amount |
-| `google_ads.ad_group_history` | Ad group metadata changes | ad_group_id, name, status, type, cpc_bid_micros |
-| `google_ads.ad_history` | Ad metadata changes | ad_id, type, status, ad_strength, headlines, descriptions |
-| `google_ads.ad_group_criterion_history` | Keyword/criteria metadata | criterion_id, keyword_text, keyword_match_type, quality_score |
+| Table Name | Description | Primary Key | Key Columns |
+|------------|-------------|-------------|-------------|
+| `google_ads.account_history` | Account metadata changes | account_id, _fivetran_synced | descriptive_name (NVARCHAR), currency_code (NVARCHAR), time_zone (NVARCHAR) |
+| `google_ads.campaign_history` | Campaign metadata changes | campaign_id, _fivetran_synced | name, status, advertising_channel_type, bidding_strategy_type, budget_amount (DECIMAL), start_date, end_date |
+| `google_ads.ad_group_history` | Ad group metadata changes | ad_group_id, _fivetran_synced | name, status, type, cpc_bid_micros (BIGINT), target_cpa_micros (BIGINT), effective_target_roas (DECIMAL) |
+| `google_ads.ad_history` | Ad metadata changes | ad_id, _fivetran_synced | type, status, ad_strength, responsive_search_ad_headlines, expanded_text_ad fields, final_urls |
+| `google_ads.ad_group_criterion_history` | Keyword/criteria metadata | criterion_id, _fivetran_synced | keyword_text, keyword_match_type, quality_score (INT), creative_quality_score, cpc_bid_micros |
+
+### Column Data Types Reference
+
+| Column Name | Data Type | Description |
+|-------------|-----------|-------------|
+| `*_id` | BIGINT | Entity identifiers (account_id, campaign_id, etc.) |
+| `date` | DATE | Reporting date |
+| `spend` | DECIMAL(18,6) | Cost/spend amount in account currency |
+| `impressions` | BIGINT | Number of ad impressions |
+| `clicks` | BIGINT | Number of ad clicks |
+| `conversions` | DECIMAL(18,6) | Number of conversion actions |
+| `conversions_value` | DECIMAL(18,6) | Monetary value of conversions |
+| `*_bid_micros` | BIGINT | Bid amounts in micros (divide by 1,000,000 for actual value) |
+| `quality_score` | INT | Google Quality Score (1-10) |
+| `_fivetran_synced` | DATETIME2 | Sync timestamp for change tracking |
+| `_fivetran_deleted` | BIT | Soft delete flag |
 
 ---
 
 ## View Definitions
 
+All views are defined in the `dbo` schema and reference tables from the `google_ads` schema.
+
 ### Account Level Views
 
-| View Name | Purpose | Key Features |
-|-----------|---------|--------------|
-| `vw_account_performance` | Daily account metrics | All KPIs calculated, account attributes joined |
-| `vw_account_performance_summary` | Aggregated account stats | 30-day comparison with previous period |
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_account_performance` | Daily account metrics | account_stats, account_history | All KPIs calculated, account attributes joined |
+| `vw_account_performance_summary` | Aggregated account stats | (via vw_account_performance) | 30-day comparison with previous period |
 
 ### Campaign Level Views
 
-| View Name | Purpose | Key Features |
-|-----------|---------|--------------|
-| `vw_campaign_performance` | Daily campaign metrics | Budget utilization, all KPIs |
-| `vw_campaign_trend_analysis` | Trend analysis data | 7-day/30-day moving averages, WoW comparisons |
-| `vw_campaign_performance_summary` | Aggregated campaign stats | Period summary with rankings |
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_campaign_performance` | Daily campaign metrics | campaign_stats, campaign_history, account_history | Budget utilization, all KPIs |
+| `vw_campaign_trend_analysis` | Trend analysis data | (via vw_campaign_performance) | 7-day/30-day moving averages, WoW comparisons |
+| `vw_campaign_performance_summary` | Aggregated campaign stats | (via vw_campaign_performance) | Period summary with rankings |
 
 ### Ad Group Level Views
 
-| View Name | Purpose | Key Features |
-|-----------|---------|--------------|
-| `vw_ad_group_performance` | Daily ad group metrics | Full hierarchy context |
-| `vw_ad_group_drilldown` | Hierarchical drill-down | Percentage of campaign, rankings |
-| `vw_ad_group_performance_summary` | Aggregated ad group stats | Period comparison |
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_ad_group_performance` | Daily ad group metrics | ad_group_stats, ad_group_history, campaign_history, account_history | Full hierarchy context |
+| `vw_ad_group_drilldown` | Hierarchical drill-down | (via vw_ad_group_performance) | Percentage of campaign, rankings |
+| `vw_ad_group_performance_summary` | Aggregated ad group stats | (via vw_ad_group_performance) | Period comparison |
 
 ### Keyword Level Views
 
-| View Name | Purpose | Key Features |
-|-----------|---------|--------------|
-| `vw_keyword_performance` | Daily keyword metrics | Quality score data, impression share |
-| `vw_keyword_top_performers` | Top keywords analysis | Performance classification, rankings |
-| `vw_keyword_quality_score_analysis` | Quality score analysis | Component breakdown, recommendations |
-| `vw_keyword_match_type_analysis` | Match type comparison | Performance by match type |
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_keyword_performance` | Daily keyword metrics | keyword_stats, ad_group_criterion_history, ad_group_history, campaign_history, account_history | Quality score data, impression share |
+| `vw_keyword_top_performers` | Top keywords analysis | (via vw_keyword_performance) | Performance classification, rankings |
+| `vw_keyword_quality_score_analysis` | Quality score analysis | (via vw_keyword_performance) | Component breakdown, recommendations |
+| `vw_keyword_match_type_analysis` | Match type comparison | (via vw_keyword_performance) | Performance by match type |
 
 ### Ad Level Views
 
-| View Name | Purpose | Key Features |
-|-----------|---------|--------------|
-| `vw_ad_performance` | Daily ad metrics | Ad copy elements, ad strength |
-| `vw_ad_copy_effectiveness` | Ad copy analysis | Performance tiers, optimization suggestions |
-| `vw_ad_strength_analysis` | Ad strength correlation | Performance by ad strength |
-| `vw_ad_type_comparison` | Ad type comparison | RSA vs ETA performance |
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_ad_performance` | Daily ad metrics | ad_stats, ad_history, ad_group_history, campaign_history, account_history | Ad copy elements, ad strength |
+| `vw_ad_copy_effectiveness` | Ad copy analysis | (via vw_ad_performance) | Performance tiers, optimization suggestions |
+| `vw_ad_strength_analysis` | Ad strength correlation | (via vw_ad_performance) | Performance by ad strength |
+| `vw_ad_type_comparison` | Ad type comparison | (via vw_ad_performance) | RSA vs ETA performance |
 
 ### Date Dimension View
 
-| View Name | Purpose | Key Features |
-|-----------|---------|--------------|
-| `vw_date_dimension` | Time-based filtering | Day/week/month/quarter/year attributes, relative date flags |
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_date_dimension` | Time-based filtering | account_stats (for date range) | Day/week/month/quarter/year attributes, relative date flags |
 
 ---
 
@@ -248,19 +268,31 @@ Channel Type (Search, Display, Video, etc.)
 
 ## Data Refresh Schedule
 
-### Fivetran Sync Schedule
+### Data Sync Schedule
 - **Frequency**: Daily (recommended)
 - **Typical Sync Time**: 2-4 hours after midnight
 - **Data Lag**: Google Ads data is typically 1-2 days behind
 
 ### PowerBI Refresh Schedule
-- **Recommended**: Daily refresh after Fivetran sync completes
-- **Time**: Schedule 4-6 hours after Fivetran sync start time
-- **Example**: If Fivetran syncs at 2 AM, schedule PowerBI refresh at 6-8 AM
+- **Recommended**: Daily refresh after data sync completes
+- **Time**: Schedule 4-6 hours after data sync start time
+- **Example**: If data syncs at 2 AM, schedule PowerBI refresh at 6-8 AM
 
 ### Data Freshness Indicators
 - All views include `last_synced_at` column from `_fivetran_synced`
 - Use this to display data freshness in dashboard headers
+
+---
+
+## Schema Reference
+
+The complete schema definition is available in `AdCampaignDataSchema.sql`, which includes:
+
+1. **Database Configuration**: Azure SQL Database settings and configurations
+2. **Schema Creation**: `google_ads` schema for all Google Ads tables
+3. **Stats Tables**: Daily metric tables (account_stats, campaign_stats, ad_group_stats, ad_stats, keyword_stats)
+4. **History Tables**: Entity metadata tables with change tracking (account_history, campaign_history, ad_group_history, ad_history, ad_group_criterion_history)
+5. **Indexes**: Optimized indexes for common query patterns
 
 ---
 

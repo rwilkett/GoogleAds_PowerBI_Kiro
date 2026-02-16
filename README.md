@@ -1,6 +1,6 @@
 # Google Ads PowerBI Dashboard
 
-A comprehensive PowerBI dashboard solution for analyzing Google Ads performance data sourced from Fivetran's Google Ads connector in SQL Server.
+A comprehensive PowerBI dashboard solution for analyzing Google Ads performance data stored in SQL Server within the `google_ads` schema.
 
 ## Table of Contents
 
@@ -19,14 +19,14 @@ A comprehensive PowerBI dashboard solution for analyzing Google Ads performance 
 
 ## Overview
 
-This repository contains SQL views, queries, and documentation for building a Google Ads analytics dashboard in PowerBI. The data model transforms raw Fivetran-synced Google Ads data into analysis-ready views with pre-calculated KPIs and performance metrics.
+This repository contains the database schema, SQL views, queries, and documentation for building a Google Ads analytics dashboard in PowerBI. The data model transforms raw Google Ads data into analysis-ready views with pre-calculated KPIs and performance metrics.
 
 ### Architecture
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  Google Ads  │────►│   Fivetran   │────►│  SQL Server  │
-│     API      │     │   Connector  │     │  (google_ads │
+│  Google Ads  │────►│  Data Sync   │────►│  SQL Server  │
+│     API      │     │  (ETL/ELT)   │     │  (google_ads │
 └──────────────┘     └──────────────┘     │   schema)    │
                                           └──────┬───────┘
                                                  │
@@ -67,23 +67,22 @@ This repository contains SQL views, queries, and documentation for building a Go
 
 ### Required Access
 
-- Fivetran Google Ads connector configured and syncing data
-- SQL Server database with `google_ads` schema containing Fivetran data
-- Read access to Fivetran tables
+- SQL Server database with `google_ads` schema
+- Read access to google_ads schema tables
 - Permission to create views in target database
 
-### Fivetran Tables Required
+### Schema Tables Required
 
-The following Fivetran tables must be present:
+The following tables must be present in the `google_ads` schema (defined in `AdCampaignDataSchema.sql`):
 
-**Stats Tables:**
+**Stats Tables (Daily Metrics):**
 - `google_ads.account_stats`
 - `google_ads.campaign_stats`
 - `google_ads.ad_group_stats`
 - `google_ads.ad_stats`
 - `google_ads.keyword_stats`
 
-**History Tables:**
+**History Tables (Entity Attributes):**
 - `google_ads.account_history`
 - `google_ads.campaign_history`
 - `google_ads.ad_group_history`
@@ -97,6 +96,7 @@ The following Fivetran tables must be present:
 ```
 GoogleAds_PowerBI_Kiro/
 ├── README.md                           # This file
+├── AdCampaignDataSchema.sql            # Database and table schema definitions
 ├── docs/
 │   └── data-model.md                   # Data model documentation
 └── sql/
@@ -116,9 +116,22 @@ GoogleAds_PowerBI_Kiro/
 
 ## SQL Server Setup
 
-### Step 1: Verify Fivetran Schema
+### Step 1: Create Database Schema
 
-First, confirm that the Fivetran connector has created the required tables:
+First, run the schema script to create the database and tables:
+
+```bash
+# Execute the schema script
+sqlcmd -S your-server-name -d master -i AdCampaignDataSchema.sql
+```
+
+Or run in SQL Server Management Studio:
+1. Open `AdCampaignDataSchema.sql`
+2. Execute the script to create the database, schema, and tables
+
+### Step 2: Verify Schema Tables
+
+Confirm that the tables were created successfully:
 
 ```sql
 -- Check for required tables
@@ -128,41 +141,41 @@ WHERE TABLE_SCHEMA = 'google_ads'
 ORDER BY TABLE_NAME;
 ```
 
-### Step 2: Create Views
+### Step 3: Create Views
 
 Execute the SQL view scripts in the following order:
 
-1. **Date Dimension** (no dependencies)
+1. **Date Dimension** (depends on account_stats for date range)
    ```bash
    sql/views/vw_date_dimension.sql
    ```
 
-2. **Account Performance** (depends on Fivetran tables)
+2. **Account Performance** (depends on google_ads schema tables)
    ```bash
    sql/views/vw_account_performance.sql
    ```
 
-3. **Campaign Performance** (depends on account views)
+3. **Campaign Performance** (depends on google_ads schema tables)
    ```bash
    sql/views/vw_campaign_performance.sql
    ```
 
-4. **Ad Group Performance** (depends on campaign views)
+4. **Ad Group Performance** (depends on google_ads schema tables)
    ```bash
    sql/views/vw_ad_group_performance.sql
    ```
 
-5. **Keyword Performance** (depends on ad group views)
+5. **Keyword Performance** (depends on google_ads schema tables)
    ```bash
    sql/views/vw_keyword_performance.sql
    ```
 
-6. **Ad Performance** (depends on ad group views)
+6. **Ad Performance** (depends on google_ads schema tables)
    ```bash
    sql/views/vw_ad_performance.sql
    ```
 
-### Step 3: Verify Views
+### Step 4: Verify Views
 
 ```sql
 -- Verify all views were created
@@ -178,7 +191,7 @@ SELECT TOP 10 * FROM [dbo].[vw_account_performance];
 SELECT TOP 10 * FROM [dbo].[vw_campaign_performance];
 ```
 
-### Step 4: Grant Permissions (Optional)
+### Step 5: Grant Permissions (Optional)
 
 If using a separate PowerBI service account:
 
@@ -365,7 +378,7 @@ DIVIDE(
 ### Common Issues
 
 #### Issue: Views fail to create
-**Solution**: Ensure Fivetran schema name matches. The default is `google_ads`, but it may vary. Update schema references in SQL files if needed.
+**Solution**: Ensure the google_ads schema and tables exist. Run `AdCampaignDataSchema.sql` first to create the schema structure. If using a data sync tool, verify the schema name matches `google_ads`.
 
 ```sql
 -- Find your actual schema name
@@ -375,7 +388,7 @@ WHERE TABLE_NAME LIKE '%stats';
 ```
 
 #### Issue: No data in views
-**Solution**: Verify Fivetran sync is working and data exists:
+**Solution**: Verify data has been loaded into the schema tables:
 
 ```sql
 SELECT COUNT(*) FROM google_ads.account_stats;

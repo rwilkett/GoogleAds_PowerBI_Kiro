@@ -3,7 +3,18 @@
 VIEW: vw_campaign_performance
 DESCRIPTION: Campaign-level performance metrics with trend analysis capabilities.
              Includes campaign details and calculated KPIs for PowerBI dashboards.
-FIVETRAN TABLES: google_ads.campaign_stats, google_ads.campaign_history
+SCHEMA TABLES:
+  - google_ads.campaign_stats: Daily campaign-level performance metrics
+    Columns: campaign_id, account_id, date, spend, impressions, clicks, conversions,
+             conversions_value, view_through_conversions, video_views,
+             video_quartile_p25_rate, video_quartile_p50_rate, video_quartile_p75_rate,
+             video_quartile_p100_rate, interactions, interaction_event_types, _fivetran_synced
+  - google_ads.campaign_history: Campaign metadata with change history
+    Columns: campaign_id, account_id, name, status, advertising_channel_type,
+             advertising_channel_sub_type, bidding_strategy_type, start_date, end_date,
+             budget_amount, budget_period, _fivetran_synced
+  - google_ads.account_history: Account metadata with change history
+    Columns: account_id, descriptive_name, currency_code, _fivetran_synced
 ================================================================================
 */
 
