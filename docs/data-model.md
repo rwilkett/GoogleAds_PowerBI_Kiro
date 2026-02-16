@@ -1,8 +1,10 @@
-# Google Ads PowerBI Data Model Documentation
+# Ad Campaign & CRM Data Model Documentation
 
 ## Overview
 
-This document describes the data model for the Google Ads PowerBI dashboard, including entity relationships, metric definitions, and usage guidelines. The data is sourced from Google Ads data (via Fivetran connector or similar ETL) and stored in SQL Server within the `google_ads` schema.
+This document describes the data model for the multi-platform analytics PowerBI dashboard, including entity relationships, metric definitions, and usage guidelines. The data is sourced from:
+- **Google Ads** data (via Fivetran connector) - stored in the `google_ads` schema
+- **HubSpot CRM** data (via Fivetran connector) - stored in the `hubspot` schema
 
 ---
 
@@ -10,15 +12,20 @@ This document describes the data model for the Google Ads PowerBI dashboard, inc
 
 1. [Entity Relationship Diagram](#entity-relationship-diagram)
 2. [Data Source Tables (google_ads Schema)](#data-source-tables-google_ads-schema)
-3. [View Definitions](#view-definitions)
-4. [Metric Definitions](#metric-definitions)
-5. [Dimension Hierarchies](#dimension-hierarchies)
-6. [Date Dimension](#date-dimension)
-7. [Data Refresh Schedule](#data-refresh-schedule)
+3. [Data Source Tables (hubspot Schema)](#data-source-tables-hubspot-schema)
+4. [View Definitions](#view-definitions)
+5. [HubSpot View Definitions](#hubspot-view-definitions)
+6. [Metric Definitions](#metric-definitions)
+7. [HubSpot Metric Definitions](#hubspot-metric-definitions)
+8. [Dimension Hierarchies](#dimension-hierarchies)
+9. [Date Dimension](#date-dimension)
+10. [Data Refresh Schedule](#data-refresh-schedule)
 
 ---
 
 ## Entity Relationship Diagram
+
+### Google Ads Data Model
 
 ```
 ┌─────────────────┐
@@ -63,6 +70,56 @@ All fact tables connect to:
 └─────────────────┘
 ```
 
+### HubSpot CRM Data Model
+
+```
+┌─────────────────┐        ┌─────────────────┐        ┌─────────────────┐
+│    Contact      │◄──────►│    Company      │◄──────►│     Deal        │
+│  (vw_hubspot_   │  N:1   │  (vw_hubspot_   │  1:N   │  (vw_hubspot_   │
+│   contact_      │        │   company_      │        │   deal_         │
+│  performance)   │        │  performance)   │        │  performance)   │
+└────────┬────────┘        └────────┬────────┘        └────────┬────────┘
+         │                          │                          │
+         │ N:N                      │ N:N                      │ N:N
+         ▼                          ▼                          ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Engagement                                     │
+│                    (vw_hubspot_engagement_performance)                   │
+│   Types: CALL, MEETING, EMAIL, NOTE, TASK                               │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────┐        ┌─────────────────┐
+│  Email Campaign │───────►│   Email Event   │
+│  (vw_hubspot_   │  1:N   │  (SENT, OPEN,   │
+│   email_        │        │   CLICK, etc.)  │
+│  performance)   │        │                 │
+└─────────────────┘        └─────────────────┘
+
+┌─────────────────┐        ┌─────────────────┐
+│  Deal Pipeline  │───────►│   Deal Stage    │
+│                 │  1:N   │                 │
+└─────────────────┘        └─────────────────┘
+
+
+HubSpot Relationships:
+- Contact ──(N:1)──► Company (associated_company_id)
+- Contact ──(1:N)──► Deal (associated_contact_id)
+- Company ──(1:N)──► Deal (associated_company_id)
+- Contact ──(N:N)──► Engagement (via engagement_contact)
+- Company ──(N:N)──► Engagement (via engagement_company)
+- Deal ──(N:N)──► Engagement (via engagement_deal)
+- Email Campaign ──(1:N)──► Email Event
+- Deal Pipeline ──(1:N)──► Deal Stage
+- Deal ──(N:1)──► Deal Stage
+
+All entities associated with:
+┌─────────────────┐
+│     Owner       │
+│ (Sales Rep/     │
+│  Team Member)   │
+└─────────────────┘
+```
+
 ---
 
 ## Data Source Tables (google_ads Schema)
@@ -102,6 +159,70 @@ The following tables are defined in `AdCampaignDataSchema.sql` within the `googl
 | `conversions_value` | DECIMAL(18,6) | Monetary value of conversions |
 | `*_bid_micros` | BIGINT | Bid amounts in micros (divide by 1,000,000 for actual value) |
 | `quality_score` | INT | Google Quality Score (1-10) |
+| `_fivetran_synced` | DATETIME2 | Sync timestamp for change tracking |
+| `_fivetran_deleted` | BIT | Soft delete flag |
+
+---
+
+## Data Source Tables (hubspot Schema)
+
+The following tables are defined in `AdCampaignDataSchema.sql` within the `hubspot` schema:
+
+### Contact & Company Tables
+
+| Table Name | Description | Primary Key | Key Columns |
+|------------|-------------|-------------|-------------|
+| `hubspot.contact` | Contact records with CRM properties | contact_id | email, lifecycle_stage, lead_status, owner_id, associated_company_id, total_revenue, hs_analytics_source |
+| `hubspot.company` | Company/account records | company_id | name, domain, industry, lifecycle_stage, owner_id, annual_revenue, num_associated_contacts, num_associated_deals |
+| `hubspot.contact_list` | Contact list definitions | contact_list_id | name, dynamic, list_size |
+| `hubspot.contact_list_member` | Contact-to-list associations | contact_id, contact_list_id | added_at |
+| `hubspot.owner` | Owner/sales rep records | owner_id | email, first_name, last_name, type |
+
+### Deal Pipeline Tables
+
+| Table Name | Description | Primary Key | Key Columns |
+|------------|-------------|-------------|-------------|
+| `hubspot.deal` | Deal/opportunity records | deal_id | deal_name, pipeline_id, pipeline_stage_id, amount, owner_id, associated_company_id, is_closed, is_closed_won |
+| `hubspot.deal_pipeline` | Pipeline definitions | pipeline_id | label, display_order |
+| `hubspot.deal_stage` | Stage definitions per pipeline | stage_id, pipeline_id | label, probability, is_closed, is_closed_won |
+| `hubspot.deal_stage_history` | Deal stage transition history | deal_id, stage_id, timestamp | source, source_id |
+
+### Email Campaign Tables
+
+| Table Name | Description | Primary Key | Key Columns |
+|------------|-------------|-------------|-------------|
+| `hubspot.email_campaign` | Marketing email campaign definitions | campaign_id | name, subject, type, num_included, num_queued |
+| `hubspot.email_event` | All email events (sends, opens, clicks, etc.) | event_id | email_campaign_id, recipient, type, created_at, device_type |
+| `hubspot.email_event_sent` | Sent email details | event_id | from_email, subject |
+| `hubspot.email_event_open` | Open event details | event_id | browser, ip_address, duration |
+| `hubspot.email_event_click` | Click event details | event_id | url, browser |
+| `hubspot.email_event_bounce` | Bounce event details | event_id | category, response, status |
+
+### Engagement Tables
+
+| Table Name | Description | Primary Key | Key Columns |
+|------------|-------------|-------------|-------------|
+| `hubspot.engagement` | Base engagement records | engagement_id | type (CALL, MEETING, EMAIL, NOTE, TASK), timestamp, owner_id |
+| `hubspot.engagement_contact` | Contact-engagement associations | engagement_id, contact_id | - |
+| `hubspot.engagement_company` | Company-engagement associations | engagement_id, company_id | - |
+| `hubspot.engagement_deal` | Deal-engagement associations | engagement_id, deal_id | - |
+| `hubspot.engagement_call` | Call engagement details | engagement_id | disposition, duration_milliseconds, status, recording_url |
+| `hubspot.engagement_meeting` | Meeting engagement details | engagement_id | title, start_time, end_time, meeting_outcome |
+| `hubspot.engagement_email` | Email engagement details | engagement_id | subject, from_email, to_email |
+| `hubspot.engagement_note` | Note engagement details | engagement_id | body |
+| `hubspot.engagement_task` | Task engagement details | engagement_id | subject, status, task_type, priority, completion_date |
+
+### HubSpot Column Data Types Reference
+
+| Column Name | Data Type | Description |
+|-------------|-----------|-------------|
+| `*_id` | BIGINT | Entity identifiers (contact_id, company_id, deal_id, etc.) |
+| `email` | NVARCHAR(255) | Email addresses |
+| `lifecycle_stage` | NVARCHAR(100) | Contact/Company lifecycle (subscriber, lead, mql, sql, opportunity, customer) |
+| `amount` | DECIMAL(18,2) | Deal monetary values |
+| `hs_*` | Various | HubSpot analytics and system properties |
+| `duration_milliseconds` | BIGINT | Call duration in milliseconds |
+| `probability` | DECIMAL(5,2) | Deal stage probability percentage |
 | `_fivetran_synced` | DATETIME2 | Sync timestamp for change tracking |
 | `_fivetran_deleted` | BIT | Soft delete flag |
 
@@ -160,6 +281,62 @@ All views are defined in the `dbo` schema and reference tables from the `google_
 
 ---
 
+## HubSpot View Definitions
+
+All HubSpot views are defined in the `dbo` schema and reference tables from the `hubspot` schema.
+
+### Contact Level Views
+
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_hubspot_contact_performance` | Contact metrics & engagement | contact, owner, company, engagement_contact, engagement | Lifecycle stage, engagement tracking, revenue attribution |
+| `vw_hubspot_contact_lifecycle_funnel` | Funnel analysis by stage | contact | Stage distribution, conversion metrics |
+| `vw_hubspot_contact_source_performance` | Source attribution | contact | Acquisition source analysis, conversion rates |
+| `vw_hubspot_contact_owner_performance` | Owner/rep metrics | contact, owner | Owner productivity, contact quality |
+
+### Company Level Views
+
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_hubspot_company_performance` | Company/account metrics | company, owner, contact, deal, engagement_company, engagement | Account health, lifetime value, deal metrics |
+| `vw_hubspot_company_industry_analysis` | Industry segmentation | company | Industry-level aggregations |
+| `vw_hubspot_company_geography_analysis` | Geographic analysis | company | Location-based metrics |
+| `vw_hubspot_company_owner_performance` | Owner account metrics | company, owner | Account ownership productivity |
+
+### Deal Level Views
+
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_hubspot_deal_performance` | Deal pipeline metrics | deal, deal_pipeline, deal_stage, owner, company, contact, engagement_deal | Pipeline analysis, velocity, health indicators |
+| `vw_hubspot_deal_pipeline_summary` | Pipeline stage summary | deal, deal_pipeline, deal_stage | Stage distribution, weighted values |
+| `vw_hubspot_deal_stage_conversion` | Stage conversion analysis | deal_stage_history, deal_stage, deal_pipeline | Transition metrics, bottleneck identification |
+| `vw_hubspot_deal_owner_performance` | Sales rep performance | deal, owner | Win rates, revenue, velocity |
+| `vw_hubspot_deal_forecast` | Sales forecasting | deal, deal_stage, owner | Weighted pipeline by period |
+
+### Email Level Views
+
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_hubspot_email_performance` | Email campaign metrics | email_campaign, email_event | Open/click rates, deliverability, device breakdown |
+| `vw_hubspot_email_daily_metrics` | Daily email trends | email_event, email_campaign | Time series analysis |
+| `vw_hubspot_email_bounce_analysis` | Bounce analysis | email_event, email_event_bounce, email_campaign | Bounce categories, deliverability issues |
+| `vw_hubspot_email_link_performance` | Link click analysis | email_event, email_event_click, email_campaign | URL-level engagement |
+| `vw_hubspot_email_engagement_by_time` | Time pattern analysis | email_event | Hour/day engagement patterns |
+| `vw_hubspot_email_recipient_engagement` | Recipient engagement | email_event | Individual engagement history |
+
+### Engagement Level Views
+
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_hubspot_engagement_performance` | All engagement details | engagement, owner, engagement_call, engagement_meeting, engagement_email, engagement_task | Cross-channel metrics, call/meeting details |
+| `vw_hubspot_engagement_daily_summary` | Daily engagement summary | engagement, engagement_call, engagement_meeting, engagement_task, engagement_contact, engagement_company, engagement_deal | Trend analysis, type breakdown |
+| `vw_hubspot_engagement_owner_summary` | Owner engagement metrics | engagement, owner, engagement_call, engagement_meeting, engagement_task | Productivity tracking |
+| `vw_hubspot_engagement_type_analysis` | Engagement type analysis | engagement, engagement_contact, engagement_company, engagement_deal | Type distribution, effectiveness |
+| `vw_hubspot_call_analysis` | Call engagement analysis | engagement, engagement_call, owner, engagement_contact, engagement_company | Call outcomes, duration, patterns |
+| `vw_hubspot_meeting_analysis` | Meeting engagement analysis | engagement, engagement_meeting, owner, engagement_contact, engagement_company, engagement_deal | Meeting outcomes, completion rates |
+
+---
+
 ## Metric Definitions
 
 ### Core Metrics
@@ -203,6 +380,74 @@ All views are defined in the `dbo` schema and reference tables from the `google_
 | **Search Absolute Top Impression Share** | Percentage of impressions in #1 position |
 | **Lost IS (Rank)** | Impression share lost due to low Ad Rank |
 | **Lost IS (Budget)** | Impression share lost due to budget constraints |
+
+---
+
+## HubSpot Metric Definitions
+
+### Contact Metrics
+
+| Metric | Definition | Formula/Source |
+|--------|------------|----------------|
+| **Lifecycle Stage** | Contact's position in marketing/sales funnel | subscriber → lead → MQL → SQL → opportunity → customer |
+| **Total Engagements** | Number of engagement activities with contact | Count of associated engagements |
+| **Engagement Velocity** | Engagement rate over time | Total engagements / Months since created |
+| **Contact Age** | Days since contact was created | DATEDIFF(created_at, today) |
+| **Days Since Last Activity** | Time since last engagement | DATEDIFF(last_activity_date, today) |
+
+### Deal Metrics
+
+| KPI | Definition | Formula | Good Benchmark |
+|-----|------------|---------|----------------|
+| **Win Rate** | Percentage of closed deals that were won | `Won Deals / Total Closed Deals × 100` | >25% |
+| **Pipeline Value** | Total value of open deals | Sum of open deal amounts | Varies |
+| **Weighted Pipeline** | Probability-adjusted pipeline value | `Sum(Amount × Stage Probability)` | Varies |
+| **Days to Close** | Average time to close won deals | Average of days_to_close for won deals | <60 days |
+| **Average Deal Size** | Mean value of won deals | `Total Won Revenue / Won Deals` | Varies |
+| **Deal Velocity** | Speed of deals through pipeline | `Weighted Pipeline / Days in Pipeline` | Higher is better |
+
+### Email Metrics
+
+| Metric | Definition | Formula | Good Benchmark |
+|--------|------------|---------|----------------|
+| **Delivery Rate** | Percentage of emails successfully delivered | `Delivered / Sent × 100` | >95% |
+| **Unique Open Rate** | Percentage of recipients who opened | `Unique Opens / Delivered × 100` | >20% |
+| **Unique Click Rate** | Percentage of recipients who clicked | `Unique Clicks / Delivered × 100` | >3% |
+| **Click-to-Open Rate** | Clicks relative to opens | `Unique Clicks / Unique Opens × 100` | >10% |
+| **Bounce Rate** | Percentage of emails that bounced | `Bounces / Sent × 100` | <2% |
+| **Unsubscribe Rate** | Percentage who unsubscribed | `Unsubscribes / Delivered × 100` | <0.5% |
+| **Spam Complaint Rate** | Percentage who marked as spam | `Spam Reports / Delivered × 100` | <0.01% |
+
+### Engagement Metrics
+
+| Metric | Definition | Source |
+|--------|------------|--------|
+| **Total Calls** | Number of call engagements | engagement.type = 'CALL' |
+| **Total Meetings** | Number of meeting engagements | engagement.type = 'MEETING' |
+| **Total Emails (CRM)** | Number of CRM email engagements | engagement.type = 'EMAIL' |
+| **Call Duration** | Time spent on calls | engagement_call.duration_milliseconds |
+| **Meeting Completion Rate** | Percentage of meetings completed | `Completed Meetings / Total Meetings × 100` |
+| **Task Completion Rate** | Percentage of tasks completed | `Completed Tasks / Total Tasks × 100` |
+
+### Account Health Indicators
+
+| Status | Definition | Criteria |
+|--------|------------|----------|
+| **Highly Active** | Strong engagement and active deals | Engagements in last 30 days AND open deals |
+| **Active** | Recent engagement | Engagements in last 30 days |
+| **Warm** | Moderate engagement | Engagements in last 90 days |
+| **Cold** | Low engagement | Engagements exist but none in 90 days |
+| **No Engagement** | No tracked activities | Zero engagements |
+
+### Deal Health Indicators
+
+| Status | Definition | Criteria |
+|--------|------------|----------|
+| **Healthy** | Active deal with recent engagement | Last engagement within 7 days |
+| **Needs Attention** | Deal engagement slowing | Last engagement 8-14 days ago |
+| **At Risk** | Deal may be stalling | Last engagement 15-30 days ago |
+| **Stale** | Deal likely dead | Last engagement >30 days ago |
+| **No Engagement** | No activities logged | Zero engagements on deal |
 
 ---
 
@@ -288,11 +533,20 @@ Channel Type (Search, Display, Video, etc.)
 
 The complete schema definition is available in `AdCampaignDataSchema.sql`, which includes:
 
+### Google Ads Schema
 1. **Database Configuration**: Azure SQL Database settings and configurations
 2. **Schema Creation**: `google_ads` schema for all Google Ads tables
 3. **Stats Tables**: Daily metric tables (account_stats, campaign_stats, ad_group_stats, ad_stats, keyword_stats)
 4. **History Tables**: Entity metadata tables with change tracking (account_history, campaign_history, ad_group_history, ad_history, ad_group_criterion_history)
 5. **Indexes**: Optimized indexes for common query patterns
+
+### HubSpot Schema
+1. **Schema Creation**: `hubspot` schema for all HubSpot CRM tables
+2. **Contact & Company Tables**: contact, company, contact_list, contact_list_member, owner
+3. **Deal Pipeline Tables**: deal, deal_pipeline, deal_stage, deal_stage_history
+4. **Email Campaign Tables**: email_campaign, email_event, email_event_sent, email_event_open, email_event_click, email_event_bounce
+5. **Engagement Tables**: engagement, engagement_contact, engagement_company, engagement_deal, engagement_call, engagement_meeting, engagement_email, engagement_note, engagement_task
+6. **Indexes**: Optimized indexes for CRM reporting queries
 
 ---
 
@@ -301,9 +555,11 @@ The complete schema definition is available in `AdCampaignDataSchema.sql`, which
 ### PowerBI Report Design
 
 1. **Use Star Schema**: Connect all fact views to the date dimension
-2. **Implement Row-Level Security**: Filter by account_id for multi-tenant scenarios
+2. **Implement Row-Level Security**: Filter by account_id (Google Ads) or owner_id (HubSpot) for multi-tenant scenarios
 3. **Create Calculation Groups**: For time intelligence (YoY, MoM, WoW)
 4. **Use Bookmarks**: For report navigation between different analysis views
+5. **Separate Google Ads and HubSpot Pages**: Create dedicated sections for each data source
+6. **Build Cross-Platform Insights**: Create views that combine ad campaign data with CRM conversion data
 
 ### Performance Optimization
 
@@ -311,16 +567,41 @@ The complete schema definition is available in `AdCampaignDataSchema.sql`, which
 2. **Filter at Query Level**: Apply date filters in SQL, not just in PowerBI
 3. **Limit Data Volume**: Only import necessary date ranges
 4. **Use DirectQuery**: For real-time needs; Import mode for performance
+5. **Pre-aggregate HubSpot Engagement Data**: Use daily summary views for trend analysis
 
 ### Common Slicer Combinations
 
-| Slicer Set | Use Case |
-|------------|----------|
-| Date Range + Account | Executive summary |
-| Campaign + Date | Campaign analysis |
-| Ad Group + Campaign + Date | Drill-down analysis |
-| Keyword Match Type + Campaign | Keyword optimization |
-| Ad Type + Campaign | Ad creative analysis |
+| Slicer Set | Use Case | Data Source |
+|------------|----------|-------------|
+| Date Range + Account | Executive summary | Google Ads |
+| Campaign + Date | Campaign analysis | Google Ads |
+| Ad Group + Campaign + Date | Drill-down analysis | Google Ads |
+| Keyword Match Type + Campaign | Keyword optimization | Google Ads |
+| Ad Type + Campaign | Ad creative analysis | Google Ads |
+| Date Range + Owner | Sales rep performance | HubSpot |
+| Lifecycle Stage + Owner | Pipeline analysis | HubSpot |
+| Pipeline + Stage + Date | Deal funnel | HubSpot |
+| Email Campaign + Date | Email performance | HubSpot |
+| Engagement Type + Owner + Date | Activity analysis | HubSpot |
+
+### HubSpot-Specific Recommendations
+
+1. **Monitor Deal Health Daily**: Use `vw_hubspot_deal_performance` health indicators
+2. **Track Engagement Velocity**: Early warning for stalling deals
+3. **Review Lifecycle Stage Distribution**: Weekly funnel health check
+4. **Email Deliverability Monitoring**: Alert on bounce rates >2%
+5. **Owner Performance Reviews**: Weekly activity and outcome comparisons
+
+---
+
+## Query Files Reference
+
+### Google Ads Queries
+- `sql/queries/dashboard_queries.sql` - Executive dashboard, daily trends, campaign matrix, budget pacing, conversion funnel
+- `sql/queries/time_period_analysis.sql` - Time-based analysis queries
+
+### HubSpot Queries
+- `sql/queries/hubspot_dashboard_queries.sql` - Executive summary, pipeline health, deals at risk, sales forecast, contact funnel, engagement trends, email campaigns, owner leaderboard, company insights, source attribution
 
 ---
 
@@ -328,4 +609,5 @@ The complete schema definition is available in `AdCampaignDataSchema.sql`, which
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0 | Initial | Initial data model creation |
+| 1.0 | Initial | Initial data model creation (Google Ads) |
+| 2.0 | Current | Added HubSpot CRM schema and views for contacts, companies, deals, emails, and engagements |
