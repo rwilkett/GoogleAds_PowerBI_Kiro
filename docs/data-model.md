@@ -4,6 +4,7 @@
 
 This document describes the data model for the multi-platform analytics PowerBI dashboard, including entity relationships, metric definitions, and usage guidelines. The data is sourced from:
 - **Google Ads** data (via Fivetran connector) - stored in the `google_ads` schema
+- **Facebook Ads** data (via Fivetran connector) - stored in the `facebook_ads` schema
 - **HubSpot CRM** data (via Fivetran connector) - stored in the `hubspot` schema
 
 ---
@@ -12,14 +13,17 @@ This document describes the data model for the multi-platform analytics PowerBI 
 
 1. [Entity Relationship Diagram](#entity-relationship-diagram)
 2. [Data Source Tables (google_ads Schema)](#data-source-tables-google_ads-schema)
-3. [Data Source Tables (hubspot Schema)](#data-source-tables-hubspot-schema)
-4. [View Definitions](#view-definitions)
-5. [HubSpot View Definitions](#hubspot-view-definitions)
-6. [Metric Definitions](#metric-definitions)
-7. [HubSpot Metric Definitions](#hubspot-metric-definitions)
-8. [Dimension Hierarchies](#dimension-hierarchies)
-9. [Date Dimension](#date-dimension)
-10. [Data Refresh Schedule](#data-refresh-schedule)
+3. [Data Source Tables (facebook_ads Schema)](#data-source-tables-facebook_ads-schema)
+4. [Data Source Tables (hubspot Schema)](#data-source-tables-hubspot-schema)
+5. [View Definitions](#view-definitions)
+6. [Facebook Ads View Definitions](#facebook-ads-view-definitions)
+7. [HubSpot View Definitions](#hubspot-view-definitions)
+8. [Metric Definitions](#metric-definitions)
+9. [Facebook Ads Metric Definitions](#facebook-ads-metric-definitions)
+10. [HubSpot Metric Definitions](#hubspot-metric-definitions)
+11. [Dimension Hierarchies](#dimension-hierarchies)
+12. [Date Dimension](#date-dimension)
+13. [Data Refresh Schedule](#data-refresh-schedule)
 
 ---
 
@@ -68,6 +72,55 @@ All fact tables connect to:
 │ (vw_date_       │
 │ dimension)      │
 └─────────────────┘
+```
+
+### Facebook Ads Data Model
+
+```
+┌─────────────────┐
+│   Account       │
+│ (vw_facebook_   │
+│ account_        │
+│ performance)    │
+└────────┬────────┘
+         │ 1:N
+         ▼
+┌─────────────────┐
+│   Campaign      │
+│ (vw_facebook_   │
+│ campaign_       │
+│ performance)    │
+└────────┬────────┘
+         │ 1:N
+         ▼
+┌─────────────────┐
+│    Ad Set       │
+│ (vw_facebook_   │
+│ adset_          │
+│ performance)    │
+└────────┬────────┘
+         │ 1:N
+         ▼
+┌─────────────────┐        ┌─────────────────┐
+│      Ad         │───────►│    Creative     │
+│ (vw_facebook_   │   1:1  │  (creative_     │
+│ ad_performance) │        │   history)      │
+└─────────────────┘        └─────────────────┘
+
+Facebook Ads Relationships:
+- Account ──(1:N)──► Campaign
+- Campaign ──(1:N)──► Ad Set
+- Ad Set ──(1:N)──► Ad
+- Ad ──(1:1)──► Creative
+
+Insight Breakdowns (vw_facebook_ad_insights):
+┌─────────────────────────────────────────────┐
+│              Ad Insights                     │
+│  Breakdowns by:                             │
+│  - Demographics (age, gender)               │
+│  - Placements (platform, position)          │
+│  - Devices (mobile, desktop)                │
+└─────────────────────────────────────────────┘
 ```
 
 ### HubSpot CRM Data Model
@@ -161,6 +214,28 @@ The following tables are defined in `AdCampaignDataSchema.sql` within the `googl
 | `quality_score` | INT | Google Quality Score (1-10) |
 | `_fivetran_synced` | DATETIME2 | Sync timestamp for change tracking |
 | `_fivetran_deleted` | BIT | Soft delete flag |
+
+---
+
+## Data Source Tables (facebook_ads Schema)
+
+The following tables are expected in the `facebook_ads` schema (via Fivetran connector):
+
+### Stats Tables (Daily Metrics)
+
+| Table Name | Description | Primary Key | Key Columns |
+|------------|-------------|-------------|-------------|
+| `facebook_ads.basic_ad` | Daily ad-level statistics | ad_id, date | spend, impressions, clicks, reach, actions, action_values |
+
+### History Tables (Entity Attributes)
+
+| Table Name | Description | Primary Key | Key Columns |
+|------------|-------------|-------------|-------------|
+| `facebook_ads.account_history` | Account metadata | account_id, _fivetran_synced | name, account_status, currency, timezone_name |
+| `facebook_ads.campaign_history` | Campaign metadata | campaign_id, _fivetran_synced | name, status, objective, daily_budget, lifetime_budget |
+| `facebook_ads.adset_history` | Ad Set metadata | adset_id, _fivetran_synced | name, status, targeting, optimization_goal, bid_amount |
+| `facebook_ads.ad_history` | Ad metadata | ad_id, _fivetran_synced | name, status, creative_id |
+| `facebook_ads.creative_history` | Creative metadata | creative_id, _fivetran_synced | name, title, body, call_to_action_type, object_type |
 
 ---
 
@@ -281,6 +356,57 @@ All views are defined in the `dbo` schema and reference tables from the `google_
 
 ---
 
+## Facebook Ads View Definitions
+
+All Facebook Ads views are defined in the `dbo` schema and reference tables from the `facebook_ads` schema.
+
+### Account Level Views
+
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_facebook_account_performance` | Daily account metrics | basic_ad, account_history | Reach, frequency, all KPIs |
+| `vw_facebook_account_performance_summary` | Aggregated account stats | (via vw_facebook_account_performance) | 30-day comparison |
+
+### Campaign Level Views
+
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_facebook_campaign_performance` | Daily campaign metrics | basic_ad, campaign_history, account_history | Objective, budget utilization |
+| `vw_facebook_campaign_trend_analysis` | Trend analysis | (via vw_facebook_campaign_performance) | Moving averages, WoW comparisons |
+| `vw_facebook_campaign_performance_summary` | Aggregated campaign stats | (via vw_facebook_campaign_performance) | Period summary |
+| `vw_facebook_campaign_objective_analysis` | Objective comparison | (via summary) | Performance by objective |
+
+### Ad Set Level Views
+
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_facebook_adset_performance` | Daily ad set metrics | basic_ad, adset_history, campaign_history | Targeting context |
+| `vw_facebook_adset_drilldown` | Hierarchical drill-down | (via vw_facebook_adset_performance) | Targeting effectiveness |
+| `vw_facebook_adset_performance_summary` | Aggregated ad set stats | (via vw_facebook_adset_performance) | Period comparison |
+| `vw_facebook_adset_optimization_goal_analysis` | Goal analysis | (via drilldown) | Performance by optimization goal |
+
+### Ad Level Views
+
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_facebook_ad_performance` | Daily ad metrics | basic_ad, ad_history, creative_history | Creative elements, video metrics |
+| `vw_facebook_ad_creative_effectiveness` | Creative analysis | (via vw_facebook_ad_performance) | Performance tiers, suggestions |
+| `vw_facebook_ad_creative_type_comparison` | Type comparison | (via effectiveness) | Image vs video vs carousel |
+| `vw_facebook_ad_cta_analysis` | CTA analysis | (via effectiveness) | Performance by call-to-action |
+
+### Insights Views (Demographics & Placements)
+
+| View Name | Purpose | Schema Tables Used | Key Features |
+|-----------|---------|-------------------|--------------|
+| `vw_facebook_ad_insights_demographics` | Age/gender breakdown | basic_ad | Demographic performance |
+| `vw_facebook_ad_insights_placements` | Placement breakdown | basic_ad | Platform and position performance |
+| `vw_facebook_demographic_summary` | Demographic summary | (via demographics) | Audience optimization |
+| `vw_facebook_placement_summary` | Placement summary | (via placements) | Placement recommendations |
+| `vw_facebook_device_performance` | Device breakdown | (via placements) | Mobile vs desktop |
+| `vw_facebook_age_gender_matrix` | Cross-tabulation | (via demographics) | Heatmap visualization |
+
+---
+
 ## HubSpot View Definitions
 
 All HubSpot views are defined in the `dbo` schema and reference tables from the `hubspot` schema.
@@ -380,6 +506,44 @@ All HubSpot views are defined in the `dbo` schema and reference tables from the 
 | **Search Absolute Top Impression Share** | Percentage of impressions in #1 position |
 | **Lost IS (Rank)** | Impression share lost due to low Ad Rank |
 | **Lost IS (Budget)** | Impression share lost due to budget constraints |
+
+---
+
+## Facebook Ads Metric Definitions
+
+### Core Metrics
+
+| Metric | Definition | Formula |
+|--------|------------|---------|
+| **Spend** | Total cost/spend for ads | Direct from source (in account currency) |
+| **Impressions** | Number of times ads were shown | Direct from source |
+| **Clicks** | Number of clicks on ads | Direct from source |
+| **Reach** | Unique users who saw the ad | Direct from source |
+| **Actions** | Number of conversion actions taken | Direct from source |
+| **Action Value** | Total value of conversion actions | Direct from source |
+
+### Calculated KPIs
+
+| KPI | Definition | Formula | Good Benchmark |
+|-----|------------|---------|----------------|
+| **CTR** | Click-through rate | `(Clicks / Impressions) × 100` | >1% |
+| **Unique CTR** | Click rate based on reach | `(Unique Clicks / Reach) × 100` | >2% |
+| **CPC** | Cost per click | `Spend / Clicks` | Varies by objective |
+| **CPM** | Cost per 1,000 impressions | `(Spend / Impressions) × 1000` | $5-15 |
+| **CPP** | Cost per 1,000 people reached | `(Spend / Reach) × 1000` | $8-20 |
+| **Frequency** | Avg impressions per user | `Impressions / Reach` | 1.5-3 (avoid >8) |
+| **Cost Per Action** | Cost per result | `Spend / Actions` | Varies by action type |
+| **ROAS** | Return on ad spend | `Action Value / Spend` | >3:1 |
+
+### Facebook-Specific Metrics
+
+| Metric | Definition |
+|--------|------------|
+| **Link Clicks** | Clicks to destination URL |
+| **Link CTR** | Link clicks / Impressions |
+| **Video Views 25%** | Views reaching 25% completion |
+| **Video Views 100%** | Views completing full video |
+| **Video Completion Rate** | 100% views / 25% views |
 
 ---
 
@@ -540,6 +704,12 @@ The complete schema definition is available in `AdCampaignDataSchema.sql`, which
 4. **History Tables**: Entity metadata tables with change tracking (account_history, campaign_history, ad_group_history, ad_history, ad_group_criterion_history)
 5. **Indexes**: Optimized indexes for common query patterns
 
+### Facebook Ads Schema
+1. **Schema Creation**: `facebook_ads` schema for all Facebook Ads tables
+2. **Stats Tables**: basic_ad (daily metrics with demographic and placement breakdowns)
+3. **History Tables**: account_history, campaign_history, adset_history, ad_history, creative_history
+4. **Indexes**: Optimized indexes for ad reporting queries
+
 ### HubSpot Schema
 1. **Schema Creation**: `hubspot` schema for all HubSpot CRM tables
 2. **Contact & Company Tables**: contact, company, contact_list, contact_list_member, owner
@@ -600,6 +770,9 @@ The complete schema definition is available in `AdCampaignDataSchema.sql`, which
 - `sql/queries/dashboard_queries.sql` - Executive dashboard, daily trends, campaign matrix, budget pacing, conversion funnel
 - `sql/queries/time_period_analysis.sql` - Time-based analysis queries
 
+### Facebook Ads Queries
+- `sql/queries/facebook_ads_dashboard_queries.sql` - Executive metrics, daily trends, campaign matrix, ad set targeting, creative performance, demographics, placements
+
 ### HubSpot Queries
 - `sql/queries/hubspot_dashboard_queries.sql` - Executive summary, pipeline health, deals at risk, sales forecast, contact funnel, engagement trends, email campaigns, owner leaderboard, company insights, source attribution
 
@@ -610,4 +783,5 @@ The complete schema definition is available in `AdCampaignDataSchema.sql`, which
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | Initial | Initial data model creation (Google Ads) |
-| 2.0 | Current | Added HubSpot CRM schema and views for contacts, companies, deals, emails, and engagements |
+| 2.0 | Previous | Added HubSpot CRM schema and views for contacts, companies, deals, emails, and engagements |
+| 3.0 | Current | Added Facebook Ads schema and views for accounts, campaigns, ad sets, ads, and insights with demographic/placement breakdowns |
