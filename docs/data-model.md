@@ -225,17 +225,32 @@ The following tables are expected in the `facebook_ads` schema (via Fivetran con
 
 | Table Name | Description | Primary Key | Key Columns |
 |------------|-------------|-------------|-------------|
-| `facebook_ads.basic_ad` | Daily ad-level statistics | ad_id, date | spend, impressions, clicks, reach, actions, action_values |
+| `facebook_ads.basic_ad` | Daily ad-level statistics | ad_id, date | ad_id, adset_id, campaign_id, account_id, date, spend, impressions, clicks, reach, actions, action_values, _fivetran_synced |
 
 ### History Tables (Entity Attributes)
 
 | Table Name | Description | Primary Key | Key Columns |
 |------------|-------------|-------------|-------------|
-| `facebook_ads.account_history` | Account metadata | account_id, _fivetran_synced | name, account_status, currency, timezone_name |
-| `facebook_ads.campaign_history` | Campaign metadata | campaign_id, _fivetran_synced | name, status, objective, daily_budget, lifetime_budget |
-| `facebook_ads.adset_history` | Ad Set metadata | adset_id, _fivetran_synced | name, status, targeting, optimization_goal, bid_amount |
-| `facebook_ads.ad_history` | Ad metadata | ad_id, _fivetran_synced | name, status, creative_id |
-| `facebook_ads.creative_history` | Creative metadata | creative_id, _fivetran_synced | name, title, body, call_to_action_type, object_type |
+| `facebook_ads.account_history` | Account metadata | account_id, _fivetran_synced | name, account_status, currency, timezone_name, _fivetran_deleted |
+| `facebook_ads.campaign_history` | Campaign metadata | campaign_id, _fivetran_synced | name, status, objective, daily_budget, lifetime_budget, _fivetran_deleted |
+| `facebook_ads.adset_history` | Ad Set metadata | adset_id, _fivetran_synced | name, status, targeting, optimization_goal, bid_amount, _fivetran_deleted |
+| `facebook_ads.ad_history` | Ad metadata | ad_id, _fivetran_synced | name, status, creative_id, _fivetran_deleted |
+| `facebook_ads.creative_history` | Creative metadata | creative_id, _fivetran_synced | name, title, body, call_to_action_type, object_type, _fivetran_deleted |
+
+### Optional Breakdown Columns (requires Fivetran configuration)
+
+The following columns may be available in `basic_ad` if your Fivetran connector is configured to sync breakdown data:
+
+| Column Name | Description | Used By |
+|-------------|-------------|---------|
+| `age` | Age range breakdown (e.g., "18-24", "25-34") | vw_facebook_ad_insights_demographics |
+| `gender` | Gender breakdown (male, female, unknown) | vw_facebook_ad_insights_demographics |
+| `publisher_platform` | Platform (facebook, instagram, audience_network, messenger) | vw_facebook_ad_insights_placements |
+| `platform_position` | Position (feed, story, right_column, etc.) | vw_facebook_ad_insights_placements |
+| `impression_device` | Device type (desktop, mobile, tablet) | vw_facebook_ad_insights_placements |
+| `device_platform` | Device platform details | vw_facebook_ad_insights_placements |
+
+**Note:** The demographic and placement insight views are disabled by default. Enable them only if your Fivetran connector includes the optional breakdown columns listed above.
 
 ---
 
@@ -381,7 +396,7 @@ All Facebook Ads views are defined in the `dbo` schema and reference tables from
 | View Name | Purpose | Schema Tables Used | Key Features |
 |-----------|---------|-------------------|--------------|
 | `vw_facebook_adset_performance` | Daily ad set metrics | basic_ad, adset_history, campaign_history | Targeting context |
-| `vw_facebook_adset_drilldown` | Hierarchical drill-down | (via vw_facebook_adset_performance) | Targeting effectiveness |
+| `vw_facebook_adset_drilldown` | Hierarchical drill-down | (via vw_facebook_adset_performance) | Performance rankings |
 | `vw_facebook_adset_performance_summary` | Aggregated ad set stats | (via vw_facebook_adset_performance) | Period comparison |
 | `vw_facebook_adset_optimization_goal_analysis` | Goal analysis | (via drilldown) | Performance by optimization goal |
 
@@ -389,21 +404,23 @@ All Facebook Ads views are defined in the `dbo` schema and reference tables from
 
 | View Name | Purpose | Schema Tables Used | Key Features |
 |-----------|---------|-------------------|--------------|
-| `vw_facebook_ad_performance` | Daily ad metrics | basic_ad, ad_history, creative_history | Creative elements, video metrics |
-| `vw_facebook_ad_creative_effectiveness` | Creative analysis | (via vw_facebook_ad_performance) | Performance tiers, suggestions |
-| `vw_facebook_ad_creative_type_comparison` | Type comparison | (via effectiveness) | Image vs video vs carousel |
+| `vw_facebook_ad_performance` | Daily ad metrics | basic_ad, ad_history, creative_history | Creative elements |
+| `vw_facebook_ad_creative_effectiveness` | Creative analysis | (via vw_facebook_ad_performance) | Performance tiers |
+| `vw_facebook_ad_creative_type_comparison` | Type comparison | (via effectiveness) | Image vs video performance |
 | `vw_facebook_ad_cta_analysis` | CTA analysis | (via effectiveness) | Performance by call-to-action |
 
-### Insights Views (Demographics & Placements)
+### Insights Views (Optional - Requires Extended Schema)
 
-| View Name | Purpose | Schema Tables Used | Key Features |
-|-----------|---------|-------------------|--------------|
-| `vw_facebook_ad_insights_demographics` | Age/gender breakdown | basic_ad | Demographic performance |
-| `vw_facebook_ad_insights_placements` | Placement breakdown | basic_ad | Platform and position performance |
-| `vw_facebook_demographic_summary` | Demographic summary | (via demographics) | Audience optimization |
-| `vw_facebook_placement_summary` | Placement summary | (via placements) | Placement recommendations |
-| `vw_facebook_device_performance` | Device breakdown | (via placements) | Mobile vs desktop |
-| `vw_facebook_age_gender_matrix` | Cross-tabulation | (via demographics) | Heatmap visualization |
+**Note:** The following views require optional breakdown columns in the `basic_ad` table. These are disabled by default and should only be enabled if your Fivetran connector includes demographic and placement breakdown data.
+
+| View Name | Purpose | Required Columns | Status |
+|-----------|---------|------------------|--------|
+| `vw_facebook_ad_insights_demographics` | Age/gender breakdown | age, gender | Disabled (template provided) |
+| `vw_facebook_ad_insights_placements` | Placement breakdown | publisher_platform, platform_position, impression_device, device_platform | Disabled (template provided) |
+| `vw_facebook_demographic_summary` | Demographic summary | Depends on demographics view | Disabled |
+| `vw_facebook_placement_summary` | Placement summary | Depends on placements view | Disabled |
+| `vw_facebook_device_performance` | Device breakdown | Depends on placements view | Disabled |
+| `vw_facebook_age_gender_matrix` | Cross-tabulation | Depends on demographics view | Disabled |
 
 ---
 
@@ -527,23 +544,13 @@ All HubSpot views are defined in the `dbo` schema and reference tables from the 
 | KPI | Definition | Formula | Good Benchmark |
 |-----|------------|---------|----------------|
 | **CTR** | Click-through rate | `(Clicks / Impressions) × 100` | >1% |
-| **Unique CTR** | Click rate based on reach | `(Unique Clicks / Reach) × 100` | >2% |
+| **Unique CTR** | Click rate based on reach | `(Clicks / Reach) × 100` | >2% |
 | **CPC** | Cost per click | `Spend / Clicks` | Varies by objective |
 | **CPM** | Cost per 1,000 impressions | `(Spend / Impressions) × 1000` | $5-15 |
 | **CPP** | Cost per 1,000 people reached | `(Spend / Reach) × 1000` | $8-20 |
 | **Frequency** | Avg impressions per user | `Impressions / Reach` | 1.5-3 (avoid >8) |
 | **Cost Per Action** | Cost per result | `Spend / Actions` | Varies by action type |
 | **ROAS** | Return on ad spend | `Action Value / Spend` | >3:1 |
-
-### Facebook-Specific Metrics
-
-| Metric | Definition |
-|--------|------------|
-| **Link Clicks** | Clicks to destination URL |
-| **Link CTR** | Link clicks / Impressions |
-| **Video Views 25%** | Views reaching 25% completion |
-| **Video Views 100%** | Views completing full video |
-| **Video Completion Rate** | 100% views / 25% views |
 
 ---
 

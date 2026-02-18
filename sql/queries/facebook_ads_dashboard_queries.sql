@@ -2,6 +2,7 @@
 ================================================================================
 Facebook Ads Dashboard Queries
 DESCRIPTION: SQL queries for Facebook Ads PowerBI dashboard analytics.
+             Updated to use only columns available in the documented schema.
 ================================================================================
 */
 
@@ -43,10 +44,10 @@ FROM [dbo].[vw_facebook_campaign_performance_summary]
 WHERE total_spend > 0;
 GO
 
--- Ad Set Targeting Effectiveness
+-- Ad Set Performance Overview
 SELECT adset_name, campaign_name, optimization_goal,
     total_spend, total_reach, total_actions,
-    avg_frequency, targeting_effectiveness, frequency_health
+    avg_frequency, ctr_percent, cost_per_action, roas
 FROM [dbo].[vw_facebook_adset_drilldown]
 WHERE total_spend > 0;
 GO
@@ -54,11 +55,14 @@ GO
 -- Creative Performance Analysis
 SELECT ad_name, creative_type_label, call_to_action_type,
     total_spend, total_clicks, total_actions, ctr_percent,
-    cost_per_action, roas, performance_tier, optimization_suggestion
+    cost_per_action, roas
 FROM [dbo].[vw_facebook_ad_creative_effectiveness]
 WHERE total_impressions > 100;
 GO
 
+-- Note: Demographic and Placement queries require optional breakdown columns
+-- Uncomment if your Fivetran connector includes demographic/placement breakdowns
+/*
 -- Demographic Performance Summary
 SELECT age_range, gender, total_spend, total_actions,
     avg_ctr, avg_cost_per_action, avg_roas, cost_efficiency_rank
@@ -71,3 +75,4 @@ SELECT publisher_platform, platform_position, total_spend,
     avg_cost_per_action, placement_recommendation
 FROM [dbo].[vw_facebook_placement_summary];
 GO
+*/

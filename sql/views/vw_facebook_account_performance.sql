@@ -8,9 +8,7 @@ DESCRIPTION: Account-level performance metrics aggregated from Facebook Ads data
 SCHEMA TABLES:
   - facebook_ads.basic_ad: Daily ad-level performance metrics aggregated to account
     Columns: ad_id, adset_id, campaign_id, account_id, date, spend, impressions, 
-             clicks, reach, frequency, actions, action_values, inline_link_clicks,
-             inline_link_click_ctr, cost_per_inline_link_click, cpc, cpm, cpp, ctr,
-             unique_clicks, unique_ctr, _fivetran_synced
+             clicks, reach, actions, action_values, _fivetran_synced
   - facebook_ads.account_history: Account metadata with change history
     Columns: account_id, name, account_status, currency, timezone_name, 
              _fivetran_synced, _fivetran_deleted
@@ -36,7 +34,6 @@ SELECT
     a.impressions,
     a.clicks,
     a.reach,
-    a.unique_clicks,
     
     -- Frequency (impressions per reach)
     CASE 
@@ -45,8 +42,7 @@ SELECT
         ELSE 0 
     END AS frequency,
     
-    -- Action Metrics (converted from JSON where applicable)
-    COALESCE(a.inline_link_clicks, 0) AS link_clicks,
+    -- Action Metrics
     COALESCE(a.actions, 0) AS total_actions,
     COALESCE(a.action_values, 0) AS total_action_value,
     
@@ -60,7 +56,7 @@ SELECT
     -- Calculated Metrics - Unique CTR (based on reach)
     CASE 
         WHEN a.reach > 0 
-        THEN CAST((a.unique_clicks * 100.0 / a.reach) AS DECIMAL(10, 4))
+        THEN CAST((a.clicks * 100.0 / a.reach) AS DECIMAL(10, 4))
         ELSE 0 
     END AS unique_ctr_percent,
     
@@ -70,13 +66,6 @@ SELECT
         THEN CAST((a.spend / a.clicks) AS DECIMAL(18, 4))
         ELSE 0 
     END AS avg_cpc,
-    
-    -- Calculated Metrics - Cost Per Link Click
-    CASE 
-        WHEN COALESCE(a.inline_link_clicks, 0) > 0 
-        THEN CAST((a.spend / a.inline_link_clicks) AS DECIMAL(18, 4))
-        ELSE 0 
-    END AS cost_per_link_click,
     
     -- Calculated Metrics - Cost Per Result (using actions)
     CASE 
@@ -118,8 +107,6 @@ FROM (
         SUM(impressions) AS impressions,
         SUM(clicks) AS clicks,
         SUM(reach) AS reach,
-        SUM(unique_clicks) AS unique_clicks,
-        SUM(inline_link_clicks) AS inline_link_clicks,
         SUM(actions) AS actions,
         SUM(action_values) AS action_values,
         MAX(_fivetran_synced) AS _fivetran_synced
@@ -157,7 +144,6 @@ WITH CurrentPeriod AS (
         SUM(impressions) AS total_impressions,
         SUM(clicks) AS total_clicks,
         SUM(reach) AS total_reach,
-        SUM(link_clicks) AS total_link_clicks,
         SUM(total_actions) AS total_actions,
         SUM(total_action_value) AS total_action_value,
         MIN(date) AS period_start,
@@ -193,7 +179,6 @@ SELECT
     cp.total_impressions AS current_impressions,
     cp.total_clicks AS current_clicks,
     cp.total_reach AS current_reach,
-    cp.total_link_clicks AS current_link_clicks,
     cp.total_actions AS current_actions,
     cp.total_action_value AS current_action_value,
     
