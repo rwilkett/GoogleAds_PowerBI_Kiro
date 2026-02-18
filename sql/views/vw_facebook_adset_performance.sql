@@ -7,12 +7,10 @@ DESCRIPTION: Ad Set-level performance metrics including audience targeting effec
 SCHEMA TABLES:
   - facebook_ads.basic_ad: Daily ad-level performance metrics aggregated to ad set
     Columns: ad_id, adset_id, campaign_id, account_id, date, spend, impressions, 
-             clicks, reach, frequency, actions, action_values, inline_link_clicks,
-             unique_clicks, _fivetran_synced
+             clicks, reach, actions, action_values, _fivetran_synced
   - facebook_ads.adset_history: Ad Set metadata with change history
-    Columns: adset_id, campaign_id, account_id, name, status, targeting, 
-             optimization_goal, billing_event, bid_amount, daily_budget,
-             lifetime_budget, start_time, end_time, _fivetran_synced, _fivetran_deleted
+    Columns: adset_id, name, status, targeting, optimization_goal, bid_amount,
+             _fivetran_synced, _fivetran_deleted
   - facebook_ads.campaign_history: Campaign metadata with change history
     Columns: campaign_id, name, status, objective, _fivetran_synced
   - facebook_ads.account_history: Account metadata with change history
@@ -34,15 +32,8 @@ SELECT
     adsh.name AS adset_name,
     adsh.status AS adset_status,
     adsh.optimization_goal,
-    adsh.billing_event,
     adsh.bid_amount,
     adsh.targeting AS targeting_spec,
-    adsh.start_time AS adset_start_time,
-    adsh.end_time AS adset_end_time,
-    
-    -- Budget Information
-    adsh.daily_budget AS adset_daily_budget,
-    adsh.lifetime_budget AS adset_lifetime_budget,
     
     -- Campaign Information (for drill-down context)
     ch.name AS campaign_name,
@@ -58,7 +49,6 @@ SELECT
     ads.impressions,
     ads.clicks,
     ads.reach,
-    ads.unique_clicks,
     
     -- Frequency (impressions per reach)
     CASE 
@@ -68,7 +58,6 @@ SELECT
     END AS frequency,
     
     -- Action Metrics
-    COALESCE(ads.inline_link_clicks, 0) AS link_clicks,
     COALESCE(ads.actions, 0) AS total_actions,
     COALESCE(ads.action_values, 0) AS total_action_value,
     
@@ -82,7 +71,7 @@ SELECT
     -- Calculated Metrics - Unique CTR
     CASE 
         WHEN ads.reach > 0 
-        THEN CAST((ads.unique_clicks * 100.0 / ads.reach) AS DECIMAL(10, 4))
+        THEN CAST((ads.clicks * 100.0 / ads.reach) AS DECIMAL(10, 4))
         ELSE 0 
     END AS unique_ctr_percent,
     
@@ -92,13 +81,6 @@ SELECT
         THEN CAST((ads.spend / ads.clicks) AS DECIMAL(18, 4))
         ELSE 0 
     END AS avg_cpc,
-    
-    -- Calculated Metrics - Cost Per Link Click
-    CASE 
-        WHEN COALESCE(ads.inline_link_clicks, 0) > 0 
-        THEN CAST((ads.spend / ads.inline_link_clicks) AS DECIMAL(18, 4))
-        ELSE 0 
-    END AS cost_per_link_click,
     
     -- Calculated Metrics - Cost Per Action (Result)
     CASE 
@@ -128,13 +110,6 @@ SELECT
         ELSE 0 
     END AS cpp,
     
-    -- Budget Utilization (daily)
-    CASE 
-        WHEN adsh.daily_budget > 0 
-        THEN CAST((ads.spend * 100.0 / adsh.daily_budget) AS DECIMAL(10, 2))
-        ELSE 0 
-    END AS budget_utilization_percent,
-    
     -- Bid vs Actual CPA comparison
     CASE 
         WHEN COALESCE(ads.actions, 0) > 0 AND adsh.bid_amount > 0
@@ -156,8 +131,6 @@ FROM (
         SUM(impressions) AS impressions,
         SUM(clicks) AS clicks,
         SUM(reach) AS reach,
-        SUM(unique_clicks) AS unique_clicks,
-        SUM(inline_link_clicks) AS inline_link_clicks,
         SUM(actions) AS actions,
         SUM(action_values) AS action_values,
         MAX(_fivetran_synced) AS _fivetran_synced
@@ -167,18 +140,11 @@ FROM (
 LEFT JOIN (
     SELECT 
         adset_id,
-        campaign_id,
-        account_id,
         name,
         status,
         targeting,
         optimization_goal,
-        billing_event,
         bid_amount,
-        daily_budget,
-        lifetime_budget,
-        start_time,
-        end_time,
         ROW_NUMBER() OVER (PARTITION BY adset_id ORDER BY _fivetran_synced DESC) AS rn
     FROM facebook_ads.adset_history
     WHERE COALESCE(_fivetran_deleted, 0) = 0
@@ -233,7 +199,6 @@ WITH AdSetAggregated AS (
         SUM(impressions) AS total_impressions,
         SUM(clicks) AS total_clicks,
         SUM(reach) AS total_reach,
-        SUM(link_clicks) AS total_link_clicks,
         SUM(total_actions) AS total_actions,
         SUM(total_action_value) AS total_action_value,
         
@@ -278,7 +243,6 @@ SELECT
     total_impressions,
     total_clicks,
     total_reach,
-    total_link_clicks,
     total_actions,
     total_action_value,
     

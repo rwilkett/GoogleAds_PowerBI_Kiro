@@ -7,13 +7,10 @@ DESCRIPTION: Campaign-level performance metrics with trend analysis capabilities
 SCHEMA TABLES:
   - facebook_ads.basic_ad: Daily ad-level performance metrics aggregated to campaign
     Columns: ad_id, adset_id, campaign_id, account_id, date, spend, impressions, 
-             clicks, reach, frequency, actions, action_values, inline_link_clicks,
-             inline_link_click_ctr, cost_per_inline_link_click, cpc, cpm, cpp, ctr,
-             unique_clicks, unique_ctr, _fivetran_synced
+             clicks, reach, actions, action_values, _fivetran_synced
   - facebook_ads.campaign_history: Campaign metadata with change history
-    Columns: campaign_id, account_id, name, status, objective, buying_type,
-             daily_budget, lifetime_budget, budget_remaining, start_time, stop_time,
-             _fivetran_synced, _fivetran_deleted
+    Columns: campaign_id, account_id, name, status, objective, daily_budget, 
+             lifetime_budget, _fivetran_synced, _fivetran_deleted
   - facebook_ads.account_history: Account metadata with change history
     Columns: account_id, name, currency, timezone_name, _fivetran_synced
 ================================================================================
@@ -32,14 +29,10 @@ SELECT
     ch.name AS campaign_name,
     ch.status AS campaign_status,
     ch.objective AS campaign_objective,
-    ch.buying_type,
-    ch.start_time AS campaign_start_time,
-    ch.stop_time AS campaign_stop_time,
     
     -- Budget Information
     ch.daily_budget,
     ch.lifetime_budget,
-    ch.budget_remaining,
     
     -- Account Information
     ah.name AS account_name,
@@ -50,7 +43,6 @@ SELECT
     c.impressions,
     c.clicks,
     c.reach,
-    c.unique_clicks,
     
     -- Frequency (impressions per reach)
     CASE 
@@ -59,8 +51,7 @@ SELECT
         ELSE 0 
     END AS frequency,
     
-    -- Link and Action Metrics
-    COALESCE(c.inline_link_clicks, 0) AS link_clicks,
+    -- Action Metrics
     COALESCE(c.actions, 0) AS total_actions,
     COALESCE(c.action_values, 0) AS total_action_value,
     
@@ -71,19 +62,12 @@ SELECT
         ELSE 0 
     END AS ctr_percent,
     
-    -- Calculated Metrics - Unique CTR
+    -- Calculated Metrics - Unique CTR (based on reach)
     CASE 
         WHEN c.reach > 0 
-        THEN CAST((c.unique_clicks * 100.0 / c.reach) AS DECIMAL(10, 4))
+        THEN CAST((c.clicks * 100.0 / c.reach) AS DECIMAL(10, 4))
         ELSE 0 
     END AS unique_ctr_percent,
-    
-    -- Calculated Metrics - Link Click Through Rate
-    CASE 
-        WHEN c.impressions > 0 
-        THEN CAST((COALESCE(c.inline_link_clicks, 0) * 100.0 / c.impressions) AS DECIMAL(10, 4))
-        ELSE 0 
-    END AS link_ctr_percent,
     
     -- Calculated Metrics - Cost Per Click (CPC)
     CASE 
@@ -91,13 +75,6 @@ SELECT
         THEN CAST((c.spend / c.clicks) AS DECIMAL(18, 4))
         ELSE 0 
     END AS avg_cpc,
-    
-    -- Calculated Metrics - Cost Per Link Click
-    CASE 
-        WHEN COALESCE(c.inline_link_clicks, 0) > 0 
-        THEN CAST((c.spend / c.inline_link_clicks) AS DECIMAL(18, 4))
-        ELSE 0 
-    END AS cost_per_link_click,
     
     -- Calculated Metrics - Cost Per Action
     CASE 
@@ -147,8 +124,6 @@ FROM (
         SUM(impressions) AS impressions,
         SUM(clicks) AS clicks,
         SUM(reach) AS reach,
-        SUM(unique_clicks) AS unique_clicks,
-        SUM(inline_link_clicks) AS inline_link_clicks,
         SUM(actions) AS actions,
         SUM(action_values) AS action_values,
         MAX(_fivetran_synced) AS _fivetran_synced
@@ -162,12 +137,8 @@ LEFT JOIN (
         name,
         status,
         objective,
-        buying_type,
         daily_budget,
         lifetime_budget,
-        budget_remaining,
-        start_time,
-        stop_time,
         ROW_NUMBER() OVER (PARTITION BY campaign_id ORDER BY _fivetran_synced DESC) AS rn
     FROM facebook_ads.campaign_history
     WHERE COALESCE(_fivetran_deleted, 0) = 0
@@ -359,7 +330,6 @@ SELECT
     SUM(cp.impressions) AS total_impressions,
     SUM(cp.clicks) AS total_clicks,
     SUM(cp.reach) AS total_reach,
-    SUM(cp.link_clicks) AS total_link_clicks,
     SUM(cp.total_actions) AS total_actions,
     SUM(cp.total_action_value) AS total_action_value,
     
@@ -375,9 +345,6 @@ SELECT
     CASE WHEN SUM(cp.clicks) > 0 
          THEN CAST((SUM(cp.spend) / SUM(cp.clicks)) AS DECIMAL(18, 4)) 
          ELSE 0 END AS avg_cpc,
-    CASE WHEN SUM(cp.link_clicks) > 0 
-         THEN CAST((SUM(cp.spend) / SUM(cp.link_clicks)) AS DECIMAL(18, 4)) 
-         ELSE 0 END AS avg_cost_per_link_click,
     CASE WHEN SUM(cp.total_actions) > 0 
          THEN CAST((SUM(cp.spend) / SUM(cp.total_actions)) AS DECIMAL(18, 4)) 
          ELSE 0 END AS avg_cost_per_action,
@@ -426,7 +393,6 @@ SELECT
     SUM(total_impressions) AS total_impressions,
     SUM(total_clicks) AS total_clicks,
     SUM(total_reach) AS total_reach,
-    SUM(total_link_clicks) AS total_link_clicks,
     SUM(total_actions) AS total_actions,
     SUM(total_action_value) AS total_action_value,
     

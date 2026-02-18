@@ -7,17 +7,11 @@ DESCRIPTION: Ad-level performance metrics for analyzing creative effectiveness.
 SCHEMA TABLES:
   - facebook_ads.basic_ad: Daily ad-level performance metrics
     Columns: ad_id, adset_id, campaign_id, account_id, date, spend, impressions, 
-             clicks, reach, frequency, actions, action_values, inline_link_clicks,
-             inline_link_click_ctr, cost_per_inline_link_click, cpc, cpm, cpp, ctr,
-             unique_clicks, unique_ctr, video_p25_watched_actions, video_p50_watched_actions,
-             video_p75_watched_actions, video_p100_watched_actions, video_avg_time_watched_actions,
-             _fivetran_synced
+             clicks, reach, actions, action_values, _fivetran_synced
   - facebook_ads.ad_history: Ad metadata with change history
-    Columns: ad_id, adset_id, campaign_id, account_id, name, status, 
-             creative_id, _fivetran_synced, _fivetran_deleted
+    Columns: ad_id, name, status, creative_id, _fivetran_synced, _fivetran_deleted
   - facebook_ads.creative_history: Creative metadata with change history  
-    Columns: creative_id, account_id, name, title, body, call_to_action_type,
-             image_url, video_id, object_story_id, object_type, thumbnail_url,
+    Columns: creative_id, name, title, body, call_to_action_type, object_type,
              _fivetran_synced, _fivetran_deleted
   - facebook_ads.adset_history: Ad Set metadata
     Columns: adset_id, name, _fivetran_synced
@@ -50,9 +44,6 @@ SELECT
     ch.body AS creative_body,
     ch.call_to_action_type,
     ch.object_type AS creative_type,
-    ch.image_url,
-    ch.video_id,
-    ch.thumbnail_url,
     
     -- Hierarchy context
     adsh.name AS adset_name,
@@ -66,7 +57,6 @@ SELECT
     a.impressions,
     a.clicks,
     a.reach,
-    a.unique_clicks,
     
     -- Frequency
     CASE 
@@ -76,23 +66,8 @@ SELECT
     END AS frequency,
     
     -- Action Metrics
-    COALESCE(a.inline_link_clicks, 0) AS link_clicks,
     COALESCE(a.actions, 0) AS total_actions,
     COALESCE(a.action_values, 0) AS total_action_value,
-    
-    -- Video Metrics (if applicable)
-    COALESCE(a.video_p25_watched_actions, 0) AS video_views_25pct,
-    COALESCE(a.video_p50_watched_actions, 0) AS video_views_50pct,
-    COALESCE(a.video_p75_watched_actions, 0) AS video_views_75pct,
-    COALESCE(a.video_p100_watched_actions, 0) AS video_views_100pct,
-    COALESCE(a.video_avg_time_watched_actions, 0) AS avg_video_watch_time,
-    
-    -- Video Completion Rate (if video)
-    CASE 
-        WHEN COALESCE(a.video_p25_watched_actions, 0) > 0 
-        THEN CAST((COALESCE(a.video_p100_watched_actions, 0) * 100.0 / a.video_p25_watched_actions) AS DECIMAL(10, 4))
-        ELSE 0 
-    END AS video_completion_rate,
     
     -- Calculated Metrics - Click Through Rate (CTR)
     CASE 
@@ -104,16 +79,9 @@ SELECT
     -- Calculated Metrics - Unique CTR
     CASE 
         WHEN a.reach > 0 
-        THEN CAST((a.unique_clicks * 100.0 / a.reach) AS DECIMAL(10, 4))
+        THEN CAST((a.clicks * 100.0 / a.reach) AS DECIMAL(10, 4))
         ELSE 0 
     END AS unique_ctr_percent,
-    
-    -- Calculated Metrics - Link CTR
-    CASE 
-        WHEN a.impressions > 0 
-        THEN CAST((COALESCE(a.inline_link_clicks, 0) * 100.0 / a.impressions) AS DECIMAL(10, 4))
-        ELSE 0 
-    END AS link_ctr_percent,
     
     -- Calculated Metrics - Cost Per Click (CPC)
     CASE 
@@ -121,13 +89,6 @@ SELECT
         THEN CAST((a.spend / a.clicks) AS DECIMAL(18, 4))
         ELSE 0 
     END AS avg_cpc,
-    
-    -- Calculated Metrics - Cost Per Link Click
-    CASE 
-        WHEN COALESCE(a.inline_link_clicks, 0) > 0 
-        THEN CAST((a.spend / a.inline_link_clicks) AS DECIMAL(18, 4))
-        ELSE 0 
-    END AS cost_per_link_click,
     
     -- Calculated Metrics - Cost Per Action
     CASE 
@@ -159,7 +120,6 @@ SELECT
     
     -- Creative Type Label
     CASE 
-        WHEN ch.video_id IS NOT NULL THEN 'Video'
         WHEN ch.object_type = 'PHOTO' THEN 'Image'
         WHEN ch.object_type = 'LINK' THEN 'Link'
         WHEN ch.object_type = 'VIDEO' THEN 'Video'
@@ -175,9 +135,6 @@ FROM facebook_ads.basic_ad a
 LEFT JOIN (
     SELECT 
         ad_id,
-        adset_id,
-        campaign_id,
-        account_id,
         name,
         status,
         creative_id,
@@ -188,15 +145,11 @@ LEFT JOIN (
 LEFT JOIN (
     SELECT 
         creative_id,
-        account_id,
         name,
         title,
         body,
         call_to_action_type,
         object_type,
-        image_url,
-        video_id,
-        thumbnail_url,
         ROW_NUMBER() OVER (PARTITION BY creative_id ORDER BY _fivetran_synced DESC) AS rn
     FROM facebook_ads.creative_history
     WHERE COALESCE(_fivetran_deleted, 0) = 0
@@ -261,10 +214,8 @@ WITH AdAggregated AS (
         SUM(impressions) AS total_impressions,
         SUM(clicks) AS total_clicks,
         SUM(reach) AS total_reach,
-        SUM(link_clicks) AS total_link_clicks,
         SUM(total_actions) AS total_actions,
         SUM(total_action_value) AS total_action_value,
-        SUM(video_views_100pct) AS total_video_completions,
         COUNT(DISTINCT date) AS active_days
     FROM [dbo].[vw_facebook_ad_performance]
     WHERE date >= DATEADD(DAY, -30, CAST(GETDATE() AS DATE))
@@ -307,10 +258,8 @@ SELECT
     total_impressions,
     total_clicks,
     total_reach,
-    total_link_clicks,
     total_actions,
     total_action_value,
-    total_video_completions,
     active_days,
     
     -- Frequency
@@ -322,15 +271,9 @@ SELECT
     CASE WHEN total_impressions > 0 
          THEN CAST((total_clicks * 100.0 / total_impressions) AS DECIMAL(10, 4)) 
          ELSE 0 END AS ctr_percent,
-    CASE WHEN total_impressions > 0 
-         THEN CAST((total_link_clicks * 100.0 / total_impressions) AS DECIMAL(10, 4)) 
-         ELSE 0 END AS link_ctr_percent,
     CASE WHEN total_clicks > 0 
          THEN CAST((total_spend / total_clicks) AS DECIMAL(18, 4)) 
          ELSE 0 END AS avg_cpc,
-    CASE WHEN total_link_clicks > 0 
-         THEN CAST((total_spend / total_link_clicks) AS DECIMAL(18, 4)) 
-         ELSE 0 END AS cost_per_link_click,
     CASE WHEN total_actions > 0 
          THEN CAST((total_spend / total_actions) AS DECIMAL(18, 4)) 
          ELSE 0 END AS cost_per_action,
@@ -402,7 +345,6 @@ SELECT
     SUM(total_impressions) AS total_impressions,
     SUM(total_clicks) AS total_clicks,
     SUM(total_reach) AS total_reach,
-    SUM(total_link_clicks) AS total_link_clicks,
     SUM(total_actions) AS total_actions,
     SUM(total_action_value) AS total_action_value,
     
@@ -419,9 +361,6 @@ SELECT
     CASE WHEN SUM(total_impressions) > 0 
          THEN CAST((SUM(total_clicks) * 100.0 / SUM(total_impressions)) AS DECIMAL(10, 4)) 
          ELSE 0 END AS ctr_percent,
-    CASE WHEN SUM(total_impressions) > 0 
-         THEN CAST((SUM(total_link_clicks) * 100.0 / SUM(total_impressions)) AS DECIMAL(10, 4)) 
-         ELSE 0 END AS link_ctr_percent,
     CASE WHEN SUM(total_clicks) > 0 
          THEN CAST((SUM(total_spend) / SUM(total_clicks)) AS DECIMAL(18, 4)) 
          ELSE 0 END AS avg_cpc,
@@ -460,7 +399,6 @@ SELECT
     SUM(total_spend) AS total_spend,
     SUM(total_impressions) AS total_impressions,
     SUM(total_clicks) AS total_clicks,
-    SUM(total_link_clicks) AS total_link_clicks,
     SUM(total_actions) AS total_actions,
     SUM(total_action_value) AS total_action_value,
     
@@ -468,9 +406,6 @@ SELECT
     CASE WHEN SUM(total_impressions) > 0 
          THEN CAST((SUM(total_clicks) * 100.0 / SUM(total_impressions)) AS DECIMAL(10, 4)) 
          ELSE 0 END AS avg_ctr,
-    CASE WHEN SUM(total_impressions) > 0 
-         THEN CAST((SUM(total_link_clicks) * 100.0 / SUM(total_impressions)) AS DECIMAL(10, 4)) 
-         ELSE 0 END AS avg_link_ctr,
     CASE WHEN SUM(total_clicks) > 0 
          THEN CAST((SUM(total_spend) / SUM(total_clicks)) AS DECIMAL(18, 4)) 
          ELSE 0 END AS avg_cpc,
