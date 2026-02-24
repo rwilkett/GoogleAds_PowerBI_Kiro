@@ -1,0 +1,65 @@
+table DealForecast
+	lineageTag: b7000000-0000-0000-0000-000000000001
+
+	column owner_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b7000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		sourceColumn: owner_id
+
+	column owner_name
+		dataType: string
+		lineageTag: b7000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		sourceColumn: owner_name
+
+	column forecast_period
+		dataType: string
+		lineageTag: b7000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		sourceColumn: forecast_period
+
+	column deal_count
+		dataType: int64
+		formatString: 0
+		lineageTag: b7000000-0000-0000-0000-000000000005
+		summarizeBy: sum
+		sourceColumn: deal_count
+
+	column pipeline_value
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b7000000-0000-0000-0000-000000000006
+		summarizeBy: sum
+		sourceColumn: pipeline_value
+
+	column weighted_pipeline
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b7000000-0000-0000-0000-000000000007
+		summarizeBy: sum
+		sourceColumn: weighted_pipeline
+
+	column avg_probability
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: b7000000-0000-0000-0000-000000000008
+		summarizeBy: average
+		sourceColumn: avg_probability
+
+	column avg_deal_size
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b7000000-0000-0000-0000-000000000009
+		summarizeBy: average
+		sourceColumn: avg_deal_size
+
+	partition DealForecast = m
+		mode: import
+		source =
+			let
+				Source = SqlServerConnection,
+				dbo_vw = Source{[Schema="dbo",Item="vw_hubspot_deal_forecast"]}[Data]
+			in
+				dbo_vw

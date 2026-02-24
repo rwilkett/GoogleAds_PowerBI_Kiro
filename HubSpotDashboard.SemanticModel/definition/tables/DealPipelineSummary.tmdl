@@ -1,0 +1,91 @@
+table DealPipelineSummary
+	lineageTag: b5000000-0000-0000-0000-000000000001
+
+	column pipeline_id
+		dataType: string
+		lineageTag: b5000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		sourceColumn: pipeline_id
+
+	column pipeline_name
+		dataType: string
+		lineageTag: b5000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		sourceColumn: pipeline_name
+
+	column pipeline_stage_id
+		dataType: string
+		lineageTag: b5000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		sourceColumn: pipeline_stage_id
+
+	column stage_label
+		dataType: string
+		lineageTag: b5000000-0000-0000-0000-000000000005
+		summarizeBy: none
+		sourceColumn: stage_label
+
+	column display_order
+		dataType: int64
+		formatString: 0
+		lineageTag: b5000000-0000-0000-0000-000000000006
+		summarizeBy: none
+		sourceColumn: display_order
+
+	column probability
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: b5000000-0000-0000-0000-000000000007
+		summarizeBy: average
+		sourceColumn: probability
+
+	column deal_count
+		dataType: int64
+		formatString: 0
+		lineageTag: b5000000-0000-0000-0000-000000000008
+		summarizeBy: sum
+		sourceColumn: deal_count
+
+	column total_value
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b5000000-0000-0000-0000-000000000009
+		summarizeBy: sum
+		sourceColumn: total_value
+
+	column weighted_value
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b5000000-0000-0000-0000-00000000000a
+		summarizeBy: sum
+		sourceColumn: weighted_value
+
+	column avg_deal_size
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b5000000-0000-0000-0000-00000000000b
+		summarizeBy: average
+		sourceColumn: avg_deal_size
+
+	column pct_of_pipeline_count
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: b5000000-0000-0000-0000-00000000000c
+		summarizeBy: none
+		sourceColumn: pct_of_pipeline_count
+
+	column pct_of_pipeline_value
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: b5000000-0000-0000-0000-00000000000d
+		summarizeBy: none
+		sourceColumn: pct_of_pipeline_value
+
+	partition DealPipelineSummary = m
+		mode: import
+		source =
+			let
+				Source = SqlServerConnection,
+				dbo_vw = Source{[Schema="dbo",Item="vw_hubspot_deal_pipeline_summary"]}[Data]
+			in
+				dbo_vw
