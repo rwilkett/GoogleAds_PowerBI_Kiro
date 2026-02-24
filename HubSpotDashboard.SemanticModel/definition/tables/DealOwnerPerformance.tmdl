@@ -1,0 +1,93 @@
+table DealOwnerPerformance
+	lineageTag: b6000000-0000-0000-0000-000000000001
+
+	column owner_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b6000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		sourceColumn: owner_id
+
+	column owner_name
+		dataType: string
+		lineageTag: b6000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		sourceColumn: owner_name
+
+	column owner_email
+		dataType: string
+		lineageTag: b6000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		sourceColumn: owner_email
+
+	column total_deals
+		dataType: int64
+		formatString: 0
+		lineageTag: b6000000-0000-0000-0000-000000000005
+		summarizeBy: sum
+		sourceColumn: total_deals
+
+	column won_deals
+		dataType: int64
+		formatString: 0
+		lineageTag: b6000000-0000-0000-0000-000000000006
+		summarizeBy: sum
+		sourceColumn: won_deals
+
+	column lost_deals
+		dataType: int64
+		formatString: 0
+		lineageTag: b6000000-0000-0000-0000-000000000007
+		summarizeBy: sum
+		sourceColumn: lost_deals
+
+	column open_deals
+		dataType: int64
+		formatString: 0
+		lineageTag: b6000000-0000-0000-0000-000000000008
+		summarizeBy: sum
+		sourceColumn: open_deals
+
+	column win_rate
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: b6000000-0000-0000-0000-000000000009
+		summarizeBy: average
+		sourceColumn: win_rate
+
+	column closed_won_revenue
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b6000000-0000-0000-0000-00000000000a
+		summarizeBy: sum
+		sourceColumn: closed_won_revenue
+
+	column pipeline_value
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b6000000-0000-0000-0000-00000000000b
+		summarizeBy: sum
+		sourceColumn: pipeline_value
+
+	column avg_won_deal_size
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b6000000-0000-0000-0000-00000000000c
+		summarizeBy: average
+		sourceColumn: avg_won_deal_size
+
+	column avg_days_to_close_won
+		dataType: decimal
+		formatString: 0
+		lineageTag: b6000000-0000-0000-0000-00000000000d
+		summarizeBy: average
+		sourceColumn: avg_days_to_close_won
+
+	partition DealOwnerPerformance = m
+		mode: import
+		source =
+			let
+				Source = SqlServerConnection,
+				dbo_vw = Source{[Schema="dbo",Item="vw_hubspot_deal_owner_performance"]}[Data]
+			in
+				dbo_vw

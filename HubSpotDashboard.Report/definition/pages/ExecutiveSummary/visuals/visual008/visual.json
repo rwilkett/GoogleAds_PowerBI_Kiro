@@ -1,0 +1,30 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual008",
+  "position": {
+    "x": 460,
+    "y": 460,
+    "z": 0,
+    "width": 360,
+    "height": 50,
+    "tabOrder": 7
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": {
+              "expr": {
+                "Literal": {
+                  "Value": "[{\"textRuns\":[{\"value\":\"HubSpot CRM Dashboard - Executive Summary\",\"textStyle\":{\"fontWeight\":\"bold\",\"fontSize\":\"18pt\"}}]}]"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

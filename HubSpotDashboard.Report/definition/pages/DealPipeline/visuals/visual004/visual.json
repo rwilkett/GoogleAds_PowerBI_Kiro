@@ -1,0 +1,53 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual004",
+  "position": {
+    "x": 20,
+    "y": 140,
+    "z": 0,
+    "width": 400,
+    "height": 300,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "funnel",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DealPipelineSummary"
+                    }
+                  },
+                  "Property": "stage_label"
+                }
+              },
+              "queryRef": "DealPipelineSummary.stage_label"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DealPipelineSummary"
+                    }
+                  },
+                  "Property": "total_value"
+                }
+              },
+              "queryRef": "DealPipelineSummary.total_value"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual004",
+  "position": { "x": 20, "y": 140, "z": 0, "width": 600, "height": 300, "tabOrder": 3 },
+  "visual": {
+    "visualType": "lineChart",
+    "query": { "queryState": { "Category": { "projections": [{ "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EngagementDailySummary" }}, "Property": "engagement_date" }}, "queryRef": "EngagementDailySummary.engagement_date" }]}, "Y": { "projections": [{ "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EngagementDailySummary" }}, "Property": "total_engagements" }}, "queryRef": "EngagementDailySummary.total_engagements" }]}}}
+  }
+}

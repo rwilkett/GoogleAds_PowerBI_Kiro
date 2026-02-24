@@ -1,0 +1,126 @@
+table ContactPerformance
+	lineageTag: b1000000-0000-0000-0000-000000000001
+
+	column contact_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b1000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		sourceColumn: contact_id
+
+	column email
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		sourceColumn: email
+
+	column full_name
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		sourceColumn: full_name
+
+	column first_name
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-000000000005
+		summarizeBy: none
+		sourceColumn: first_name
+
+	column last_name
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-000000000006
+		summarizeBy: none
+		sourceColumn: last_name
+
+	column lifecycle_stage
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-000000000007
+		summarizeBy: none
+		sourceColumn: lifecycle_stage
+
+	column lead_status
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-000000000008
+		summarizeBy: none
+		sourceColumn: lead_status
+
+	column owner_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b1000000-0000-0000-0000-000000000009
+		summarizeBy: none
+		sourceColumn: owner_id
+
+	column owner_name
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-00000000000a
+		summarizeBy: none
+		sourceColumn: owner_name
+
+	column associated_company_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b1000000-0000-0000-0000-00000000000b
+		summarizeBy: none
+		sourceColumn: associated_company_id
+
+	column associated_company_name
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-00000000000c
+		summarizeBy: none
+		sourceColumn: associated_company_name
+
+	column total_revenue
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b1000000-0000-0000-0000-00000000000d
+		summarizeBy: sum
+		sourceColumn: total_revenue
+
+	column total_engagements
+		dataType: int64
+		formatString: 0
+		lineageTag: b1000000-0000-0000-0000-00000000000e
+		summarizeBy: sum
+		sourceColumn: total_engagements
+
+	column engagement_status
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-00000000000f
+		summarizeBy: none
+		sourceColumn: engagement_status
+
+	column lifecycle_stage_display
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-000000000010
+		summarizeBy: none
+		sourceColumn: lifecycle_stage_display
+
+	column hs_analytics_source
+		dataType: string
+		lineageTag: b1000000-0000-0000-0000-000000000011
+		summarizeBy: none
+		sourceColumn: hs_analytics_source
+
+	column created_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: b1000000-0000-0000-0000-000000000012
+		summarizeBy: none
+		sourceColumn: created_at
+
+	column created_date_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b1000000-0000-0000-0000-000000000013
+		summarizeBy: none
+		sourceColumn: created_date_id
+
+	partition ContactPerformance = m
+		mode: import
+		source =
+			let
+				Source = SqlServerConnection,
+				dbo_vw = Source{[Schema="dbo",Item="vw_hubspot_contact_performance"]}[Data]
+			in
+				dbo_vw

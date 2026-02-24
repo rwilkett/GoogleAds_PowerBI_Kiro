@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual004",
+  "position": { "x": 20, "y": 140, "z": 0, "width": 820, "height": 320, "tabOrder": 3 },
+  "visual": {
+    "visualType": "tableEx",
+    "query": { "queryState": { "Values": { "projections": [{ "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EmailPerformance" }}, "Property": "campaign_name" }}, "queryRef": "EmailPerformance.campaign_name" }, { "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EmailPerformance" }}, "Property": "sent_count" }}, "queryRef": "EmailPerformance.sent_count" }, { "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EmailPerformance" }}, "Property": "unique_open_rate" }}, "queryRef": "EmailPerformance.unique_open_rate" }, { "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EmailPerformance" }}, "Property": "unique_click_rate" }}, "queryRef": "EmailPerformance.unique_click_rate" }, { "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EmailPerformance" }}, "Property": "performance_tier" }}, "queryRef": "EmailPerformance.performance_tier" }]}}}
+  }
+}

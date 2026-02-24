@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual006",
+  "position": { "x": 960, "y": 20, "z": 0, "width": 300, "height": 420, "tabOrder": 5 },
+  "visual": {
+    "visualType": "tableEx",
+    "query": { "queryState": { "Values": { "projections": [{ "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EngagementOwnerSummary" }}, "Property": "owner_name" }}, "queryRef": "EngagementOwnerSummary.owner_name" }, { "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EngagementOwnerSummary" }}, "Property": "total_engagements" }}, "queryRef": "EngagementOwnerSummary.total_engagements" }, { "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EngagementOwnerSummary" }}, "Property": "total_calls" }}, "queryRef": "EngagementOwnerSummary.total_calls" }, { "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EngagementOwnerSummary" }}, "Property": "total_meetings" }}, "queryRef": "EngagementOwnerSummary.total_meetings" }]}}}
+  }
+}

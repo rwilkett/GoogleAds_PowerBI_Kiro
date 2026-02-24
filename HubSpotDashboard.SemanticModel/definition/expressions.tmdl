@@ -1,0 +1,11 @@
+expression SqlServerConnection =
+	let
+		Source = Sql.Database("YOUR_SERVER_NAME", "YOUR_DATABASE_NAME")
+	in
+		Source
+	lineageTag: 00000000-0000-0000-0000-000000000001
+	queryGroup: 'SQL Server Connection'
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table

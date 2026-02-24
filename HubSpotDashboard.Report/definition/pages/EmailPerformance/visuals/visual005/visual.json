@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual005",
+  "position": { "x": 860, "y": 140, "z": 0, "width": 400, "height": 320, "tabOrder": 4 },
+  "visual": {
+    "visualType": "barChart",
+    "query": { "queryState": { "Category": { "projections": [{ "field": { "Column": { "Expression": { "SourceRef": { "Entity": "EmailPerformance" }}, "Property": "performance_tier" }}, "queryRef": "EmailPerformance.performance_tier" }]}, "Y": { "projections": [{ "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "_Measures" }}, "Property": "Total Emails Sent" }}, "queryRef": "Measure.TotalEmailsSent" }]}}}
+  }
+}

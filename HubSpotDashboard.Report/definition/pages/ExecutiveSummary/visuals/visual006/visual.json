@@ -1,0 +1,68 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual006",
+  "position": {
+    "x": 20,
+    "y": 140,
+    "z": 0,
+    "width": 600,
+    "height": 300,
+    "tabOrder": 5
+  },
+  "visual": {
+    "visualType": "barChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ContactLifecycleFunnel"
+                    }
+                  },
+                  "Property": "stage_display_name"
+                }
+              },
+              "queryRef": "ContactLifecycleFunnel.stage_display_name"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ContactLifecycleFunnel"
+                    }
+                  },
+                  "Property": "contact_count"
+                }
+              },
+              "queryRef": "ContactLifecycleFunnel.contact_count"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "orientation": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Horizontal'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

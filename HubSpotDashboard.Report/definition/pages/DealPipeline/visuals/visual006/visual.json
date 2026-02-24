@@ -1,0 +1,75 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual006",
+  "position": {
+    "x": 860,
+    "y": 20,
+    "z": 0,
+    "width": 400,
+    "height": 420,
+    "tabOrder": 5
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DealPerformance"
+                    }
+                  },
+                  "Property": "deal_name"
+                }
+              },
+              "queryRef": "DealPerformance.deal_name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DealPerformance"
+                    }
+                  },
+                  "Property": "amount"
+                }
+              },
+              "queryRef": "DealPerformance.amount"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DealPerformance"
+                    }
+                  },
+                  "Property": "deal_health_status"
+                }
+              },
+              "queryRef": "DealPerformance.deal_health_status"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DealPerformance"
+                    }
+                  },
+                  "Property": "owner_name"
+                }
+              },
+              "queryRef": "DealPerformance.owner_name"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
