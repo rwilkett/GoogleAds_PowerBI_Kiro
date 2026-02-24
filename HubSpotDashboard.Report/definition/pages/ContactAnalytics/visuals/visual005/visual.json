@@ -1,0 +1,53 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual005",
+  "position": {
+    "x": 440,
+    "y": 140,
+    "z": 0,
+    "width": 400,
+    "height": 280,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "barChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ContactPerformance"
+                    }
+                  },
+                  "Property": "hs_analytics_source"
+                }
+              },
+              "queryRef": "ContactPerformance.hs_analytics_source"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Contacts"
+                }
+              },
+              "queryRef": "Measure.TotalContacts"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual001",
+  "position": {
+    "x": 20,
+    "y": 20,
+    "z": 0,
+    "width": 200,
+    "height": 100,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Contacts"
+                }
+              },
+              "queryRef": "Measure.TotalContacts"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

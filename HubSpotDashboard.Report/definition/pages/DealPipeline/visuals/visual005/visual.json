@@ -1,0 +1,75 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual005",
+  "position": {
+    "x": 440,
+    "y": 140,
+    "z": 0,
+    "width": 400,
+    "height": 300,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DealOwnerPerformance"
+                    }
+                  },
+                  "Property": "owner_name"
+                }
+              },
+              "queryRef": "DealOwnerPerformance.owner_name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DealOwnerPerformance"
+                    }
+                  },
+                  "Property": "total_deals"
+                }
+              },
+              "queryRef": "DealOwnerPerformance.total_deals"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DealOwnerPerformance"
+                    }
+                  },
+                  "Property": "closed_won_revenue"
+                }
+              },
+              "queryRef": "DealOwnerPerformance.closed_won_revenue"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "DealOwnerPerformance"
+                    }
+                  },
+                  "Property": "win_rate"
+                }
+              },
+              "queryRef": "DealOwnerPerformance.win_rate"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

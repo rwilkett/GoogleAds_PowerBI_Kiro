@@ -1,0 +1,62 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual006",
+  "position": {
+    "x": 860,
+    "y": 20,
+    "z": 0,
+    "width": 400,
+    "height": 400,
+    "tabOrder": 5
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ContactPerformance"
+                    }
+                  },
+                  "Property": "owner_name"
+                }
+              },
+              "queryRef": "ContactPerformance.owner_name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ContactPerformance"
+                    }
+                  },
+                  "Property": "total_engagements"
+                }
+              },
+              "queryRef": "ContactPerformance.total_engagements"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ContactPerformance"
+                    }
+                  },
+                  "Property": "total_revenue"
+                }
+              },
+              "queryRef": "ContactPerformance.total_revenue"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

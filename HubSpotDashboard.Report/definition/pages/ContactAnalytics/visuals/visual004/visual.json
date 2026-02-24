@@ -1,0 +1,53 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visual/1.0.0/schema.json",
+  "name": "visual004",
+  "position": {
+    "x": 20,
+    "y": 140,
+    "z": 0,
+    "width": 400,
+    "height": 280,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "pieChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ContactPerformance"
+                    }
+                  },
+                  "Property": "lifecycle_stage_display"
+                }
+              },
+              "queryRef": "ContactPerformance.lifecycle_stage_display"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Contacts"
+                }
+              },
+              "queryRef": "Measure.TotalContacts"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
