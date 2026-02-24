@@ -1,0 +1,94 @@
+table EngagementDailySummary
+	lineageTag: b9000000-0000-0000-0000-000000000001
+
+	column engagement_date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: b9000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		sourceColumn: engagement_date
+
+	column date_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b9000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		sourceColumn: date_id
+
+	column day_of_week
+		dataType: string
+		lineageTag: b9000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		sourceColumn: day_of_week
+
+	column total_engagements
+		dataType: int64
+		formatString: 0
+		lineageTag: b9000000-0000-0000-0000-000000000005
+		summarizeBy: sum
+		sourceColumn: total_engagements
+
+	column total_calls
+		dataType: int64
+		formatString: 0
+		lineageTag: b9000000-0000-0000-0000-000000000006
+		summarizeBy: sum
+		sourceColumn: total_calls
+
+	column total_meetings
+		dataType: int64
+		formatString: 0
+		lineageTag: b9000000-0000-0000-0000-000000000007
+		summarizeBy: sum
+		sourceColumn: total_meetings
+
+	column total_emails
+		dataType: int64
+		formatString: 0
+		lineageTag: b9000000-0000-0000-0000-000000000008
+		summarizeBy: sum
+		sourceColumn: total_emails
+
+	column total_notes
+		dataType: int64
+		formatString: 0
+		lineageTag: b9000000-0000-0000-0000-000000000009
+		summarizeBy: sum
+		sourceColumn: total_notes
+
+	column total_tasks
+		dataType: int64
+		formatString: 0
+		lineageTag: b9000000-0000-0000-0000-00000000000a
+		summarizeBy: sum
+		sourceColumn: total_tasks
+
+	column unique_contacts_engaged
+		dataType: int64
+		formatString: 0
+		lineageTag: b9000000-0000-0000-0000-00000000000b
+		summarizeBy: sum
+		sourceColumn: unique_contacts_engaged
+
+	column unique_companies_engaged
+		dataType: int64
+		formatString: 0
+		lineageTag: b9000000-0000-0000-0000-00000000000c
+		summarizeBy: sum
+		sourceColumn: unique_companies_engaged
+
+	column unique_deals_engaged
+		dataType: int64
+		formatString: 0
+		lineageTag: b9000000-0000-0000-0000-00000000000d
+		summarizeBy: sum
+		sourceColumn: unique_deals_engaged
+
+	partition EngagementDailySummary = m
+		mode: import
+		source =
+			let
+				Source = SqlServerConnection,
+				dbo_vw = Source{[Schema="dbo",Item="vw_hubspot_engagement_daily_summary"]}[Data]
+			in
+				dbo_vw

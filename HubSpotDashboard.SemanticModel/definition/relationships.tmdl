@@ -1,0 +1,11 @@
+relationship ContactToCompany
+	fromColumn: ContactPerformance.associated_company_id
+	toColumn: CompanyPerformance.company_id
+
+relationship DealToOwnerPerformance
+	fromColumn: DealPerformance.owner_id
+	toColumn: DealOwnerPerformance.owner_id
+
+relationship DealToForecast
+	fromColumn: DealForecast.owner_id
+	toColumn: DealOwnerPerformance.owner_id

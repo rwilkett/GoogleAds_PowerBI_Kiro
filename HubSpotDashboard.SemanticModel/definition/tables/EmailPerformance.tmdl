@@ -1,0 +1,133 @@
+table EmailPerformance
+	lineageTag: b8000000-0000-0000-0000-000000000001
+
+	column campaign_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b8000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		sourceColumn: campaign_id
+
+	column campaign_name
+		dataType: string
+		lineageTag: b8000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		sourceColumn: campaign_name
+
+	column email_subject
+		dataType: string
+		lineageTag: b8000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		sourceColumn: email_subject
+
+	column campaign_type
+		dataType: string
+		lineageTag: b8000000-0000-0000-0000-000000000005
+		summarizeBy: none
+		sourceColumn: campaign_type
+
+	column sent_count
+		dataType: int64
+		formatString: 0
+		lineageTag: b8000000-0000-0000-0000-000000000006
+		summarizeBy: sum
+		sourceColumn: sent_count
+
+	column delivered_count
+		dataType: int64
+		formatString: 0
+		lineageTag: b8000000-0000-0000-0000-000000000007
+		summarizeBy: sum
+		sourceColumn: delivered_count
+
+	column unique_opens
+		dataType: int64
+		formatString: 0
+		lineageTag: b8000000-0000-0000-0000-000000000008
+		summarizeBy: sum
+		sourceColumn: unique_opens
+
+	column total_opens
+		dataType: int64
+		formatString: 0
+		lineageTag: b8000000-0000-0000-0000-000000000009
+		summarizeBy: sum
+		sourceColumn: total_opens
+
+	column unique_clicks
+		dataType: int64
+		formatString: 0
+		lineageTag: b8000000-0000-0000-0000-00000000000a
+		summarizeBy: sum
+		sourceColumn: unique_clicks
+
+	column total_clicks
+		dataType: int64
+		formatString: 0
+		lineageTag: b8000000-0000-0000-0000-00000000000b
+		summarizeBy: sum
+		sourceColumn: total_clicks
+
+	column bounce_count
+		dataType: int64
+		formatString: 0
+		lineageTag: b8000000-0000-0000-0000-00000000000c
+		summarizeBy: sum
+		sourceColumn: bounce_count
+
+	column delivery_rate
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: b8000000-0000-0000-0000-00000000000d
+		summarizeBy: average
+		sourceColumn: delivery_rate
+
+	column unique_open_rate
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: b8000000-0000-0000-0000-00000000000e
+		summarizeBy: average
+		sourceColumn: unique_open_rate
+
+	column unique_click_rate
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: b8000000-0000-0000-0000-00000000000f
+		summarizeBy: average
+		sourceColumn: unique_click_rate
+
+	column click_to_open_rate
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: b8000000-0000-0000-0000-000000000010
+		summarizeBy: average
+		sourceColumn: click_to_open_rate
+
+	column performance_tier
+		dataType: string
+		lineageTag: b8000000-0000-0000-0000-000000000011
+		summarizeBy: none
+		sourceColumn: performance_tier
+
+	column first_sent_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: b8000000-0000-0000-0000-000000000012
+		summarizeBy: none
+		sourceColumn: first_sent_at
+
+	column first_sent_date_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b8000000-0000-0000-0000-000000000013
+		summarizeBy: none
+		sourceColumn: first_sent_date_id
+
+	partition EmailPerformance = m
+		mode: import
+		source =
+			let
+				Source = SqlServerConnection,
+				dbo_vw = Source{[Schema="dbo",Item="vw_hubspot_email_performance"]}[Data]
+			in
+				dbo_vw
