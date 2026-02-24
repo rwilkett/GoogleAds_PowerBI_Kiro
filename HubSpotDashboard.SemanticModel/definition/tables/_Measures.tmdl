@@ -1,0 +1,117 @@
+table _Measures
+	lineageTag: c0000000-0000-0000-0000-000000000001
+
+	/// Contact Measures
+	measure 'Total Contacts' = COUNTROWS(ContactPerformance)
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000002
+
+	measure 'Total Customers' = CALCULATE(COUNTROWS(ContactPerformance), ContactPerformance[lifecycle_stage] = "customer")
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000003
+
+	measure 'Customer Conversion Rate' = DIVIDE([Total Customers], [Total Contacts], 0) * 100
+		formatString: 0.00%
+		lineageTag: c0000000-0000-0000-0000-000000000004
+
+	measure 'Total Contact Revenue' = SUM(ContactPerformance[total_revenue])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c0000000-0000-0000-0000-000000000005
+
+	measure 'New Contacts 30D' = CALCULATE(COUNTROWS(ContactPerformance), ContactPerformance[created_at] >= TODAY() - 30)
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000006
+
+	/// Deal Measures
+	measure 'Total Deals' = COUNTROWS(DealPerformance)
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000007
+
+	measure 'Open Deals' = CALCULATE(COUNTROWS(DealPerformance), DealPerformance[deal_status] = "Open")
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000008
+
+	measure 'Won Deals' = CALCULATE(COUNTROWS(DealPerformance), DealPerformance[is_closed_won] = 1)
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000009
+
+	measure 'Lost Deals' = CALCULATE(COUNTROWS(DealPerformance), DealPerformance[is_closed] = 1, DealPerformance[is_closed_won] = 0)
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-00000000000a
+
+	measure 'Deal Win Rate' = 
+		VAR ClosedDeals = CALCULATE(COUNTROWS(DealPerformance), DealPerformance[is_closed] = 1)
+		VAR WonDeals = [Won Deals]
+		RETURN DIVIDE(WonDeals, ClosedDeals, 0) * 100
+		formatString: 0.00%
+		lineageTag: c0000000-0000-0000-0000-00000000000b
+
+	measure 'Pipeline Value' = CALCULATE(SUM(DealPerformance[amount]), DealPerformance[deal_status] = "Open")
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c0000000-0000-0000-0000-00000000000c
+
+	measure 'Weighted Pipeline' = CALCULATE(SUM(DealPerformance[weighted_amount]), DealPerformance[deal_status] = "Open")
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c0000000-0000-0000-0000-00000000000d
+
+	measure 'Closed Won Revenue' = CALCULATE(SUM(DealPerformance[amount]), DealPerformance[is_closed_won] = 1)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c0000000-0000-0000-0000-00000000000e
+
+	measure 'Avg Days to Close' = AVERAGE(DealPerformance[actual_days_to_close])
+		formatString: 0
+		lineageTag: c0000000-0000-0000-0000-00000000000f
+
+	measure 'Avg Deal Size' = DIVIDE([Pipeline Value], [Open Deals], 0)
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: c0000000-0000-0000-0000-000000000010
+
+	/// Email Measures
+	measure 'Avg Open Rate' = AVERAGE(EmailPerformance[unique_open_rate])
+		formatString: 0.00%
+		lineageTag: c0000000-0000-0000-0000-000000000011
+
+	measure 'Avg Click Rate' = AVERAGE(EmailPerformance[unique_click_rate])
+		formatString: 0.00%
+		lineageTag: c0000000-0000-0000-0000-000000000012
+
+	measure 'Avg Delivery Rate' = AVERAGE(EmailPerformance[delivery_rate])
+		formatString: 0.00%
+		lineageTag: c0000000-0000-0000-0000-000000000013
+
+	measure 'Total Emails Sent' = SUM(EmailPerformance[sent_count])
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000014
+
+	/// Engagement Measures
+	measure 'Total Engagements' = SUM(EngagementDailySummary[total_engagements])
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000015
+
+	measure 'Total Calls' = SUM(EngagementDailySummary[total_calls])
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000016
+
+	measure 'Total Meetings' = SUM(EngagementDailySummary[total_meetings])
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000017
+
+	measure 'Total CRM Emails' = SUM(EngagementDailySummary[total_emails])
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000018
+
+	measure 'Contacts Engaged' = SUM(EngagementDailySummary[unique_contacts_engaged])
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-000000000019
+
+	measure 'Companies Engaged' = SUM(EngagementDailySummary[unique_companies_engaged])
+		formatString: #,0
+		lineageTag: c0000000-0000-0000-0000-00000000001a
+
+	partition _Measures = m
+		mode: import
+		source =
+			let
+				Source = #table(type table [], {})
+			in
+				Source
