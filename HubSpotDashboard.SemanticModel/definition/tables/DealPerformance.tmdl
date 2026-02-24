@@ -1,0 +1,150 @@
+table DealPerformance
+	lineageTag: b4000000-0000-0000-0000-000000000001
+
+	column deal_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b4000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		sourceColumn: deal_id
+
+	column deal_name
+		dataType: string
+		lineageTag: b4000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		sourceColumn: deal_name
+
+	column pipeline_id
+		dataType: string
+		lineageTag: b4000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		sourceColumn: pipeline_id
+
+	column pipeline_name
+		dataType: string
+		lineageTag: b4000000-0000-0000-0000-000000000005
+		summarizeBy: none
+		sourceColumn: pipeline_name
+
+	column stage_label
+		dataType: string
+		lineageTag: b4000000-0000-0000-0000-000000000006
+		summarizeBy: none
+		sourceColumn: stage_label
+
+	column deal_status
+		dataType: string
+		lineageTag: b4000000-0000-0000-0000-000000000007
+		summarizeBy: none
+		sourceColumn: deal_status
+
+	column amount
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b4000000-0000-0000-0000-000000000008
+		summarizeBy: sum
+		sourceColumn: amount
+
+	column weighted_amount
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: b4000000-0000-0000-0000-000000000009
+		summarizeBy: sum
+		sourceColumn: weighted_amount
+
+	column is_closed
+		dataType: int64
+		formatString: 0
+		lineageTag: b4000000-0000-0000-0000-00000000000a
+		summarizeBy: sum
+		sourceColumn: is_closed
+
+	column is_closed_won
+		dataType: int64
+		formatString: 0
+		lineageTag: b4000000-0000-0000-0000-00000000000b
+		summarizeBy: sum
+		sourceColumn: is_closed_won
+
+	column close_date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: b4000000-0000-0000-0000-00000000000c
+		summarizeBy: none
+		sourceColumn: close_date
+
+	column close_date_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b4000000-0000-0000-0000-00000000000d
+		summarizeBy: none
+		sourceColumn: close_date_id
+
+	column create_date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: b4000000-0000-0000-0000-00000000000e
+		summarizeBy: none
+		sourceColumn: create_date
+
+	column create_date_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b4000000-0000-0000-0000-00000000000f
+		summarizeBy: none
+		sourceColumn: create_date_id
+
+	column owner_id
+		dataType: int64
+		formatString: 0
+		lineageTag: b4000000-0000-0000-0000-000000000010
+		summarizeBy: none
+		sourceColumn: owner_id
+
+	column owner_name
+		dataType: string
+		lineageTag: b4000000-0000-0000-0000-000000000011
+		summarizeBy: none
+		sourceColumn: owner_name
+
+	column company_name
+		dataType: string
+		lineageTag: b4000000-0000-0000-0000-000000000012
+		summarizeBy: none
+		sourceColumn: company_name
+
+	column deal_age_days
+		dataType: int64
+		formatString: 0
+		lineageTag: b4000000-0000-0000-0000-000000000013
+		summarizeBy: average
+		sourceColumn: deal_age_days
+
+	column actual_days_to_close
+		dataType: int64
+		formatString: 0
+		lineageTag: b4000000-0000-0000-0000-000000000014
+		summarizeBy: average
+		sourceColumn: actual_days_to_close
+
+	column deal_health_status
+		dataType: string
+		lineageTag: b4000000-0000-0000-0000-000000000015
+		summarizeBy: none
+		sourceColumn: deal_health_status
+
+	column total_engagements
+		dataType: int64
+		formatString: 0
+		lineageTag: b4000000-0000-0000-0000-000000000016
+		summarizeBy: sum
+		sourceColumn: total_engagements
+
+	partition DealPerformance = m
+		mode: import
+		source =
+			let
+				Source = SqlServerConnection,
+				dbo_vw = Source{[Schema="dbo",Item="vw_hubspot_deal_performance"]}[Data]
+			in
+				dbo_vw
